@@ -30,7 +30,7 @@ export default function RankingsScreen() {
     { id: '18', name: 'Rachel Green', points: 470 },
     { id: '19', name: 'Steve Rogers', points: 440 },
     { id: '20', name: 'Tina Belcher', points: 410 },
-    { id: '21', name: 'You', points: points },
+    { id: '21', name: 'Você', points: points },
   ].sort((a, b) => b.points - a.points);
 
   return (
@@ -57,7 +57,7 @@ export default function RankingsScreen() {
 
       {rankings.map((user, index) => {
         const position = index + 1;
-        const isUser = user.name === 'You';
+        const isUser = user.name === 'Você';
 
         return (
           <View

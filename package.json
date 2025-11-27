@@ -1,5 +1,5 @@
 {
-  "name": "my-expo-app",
+  "name": "care-games-app",
   "version": "1.0.0",
   "scripts": {
     "android": "expo start --android",

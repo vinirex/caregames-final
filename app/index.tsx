@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
 import { Link, useRouter } from 'expo-router';
-import { Text, View, TextInput, Alert } from 'react-native';
+import { Text, View, TextInput, Alert, ImageBackground } from 'react-native';
 import '../global.css';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 import { CustomButton } from '../components/CustomButton';
+
+
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { login } = useAuth();
   const { theme, colors } = useTheme();
 
   const [email, setEmail] = useState('');
@@ -43,48 +47,51 @@ export default function LoginScreen() {
     if (validate()) {
       // In a real app, you'd perform authentication here
       Alert.alert('Login Successful', 'Welcome!');
-      router.push({ pathname: '/home', params: { userEmail: email } });
+      login(email);
+      router.push('/home');
     }
   };
 
   return (
-    <View className={`flex-1 justify-center p-6 ${theme === 'dark' ? 'bg-gray-900' : 'bg-white'}`}>
-      <Text className={`text-3xl font-bold text-center mb-8 ${theme === 'dark' ? 'text-white' : 'text-black'}`}>Login</Text>
-      <Link href="/home" className="mb-6">
-        <Text className={`text-center ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}>Don't have an account? Register</Text>
-      </Link>
-      <TextInput
-        className={`h-12 border rounded-lg px-4 mb-4 ${theme === 'dark' ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-300 text-black'}`}
-        placeholder="Email"
-        placeholderTextColor={theme === 'dark' ? '#9ca3af' : '#6b7280'}
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-        autoCapitalize="none"
-      />
-      {errors.email && <Text className="text-red-500 mb-4">{errors.email}</Text>}
+    <ImageBackground source={require('../assets/images/CarePlusDark.png')} style={{ flex: 1, justifyContent: 'center' }} resizeMode="cover">
+      <View className={`flex-1 justify-center p-6`}>
+        <Text className={`text-3xl font-bold text-center mb-8 text-white`}>Care Games Login</Text>
+        <Link href="/home" className="mb-6">
+          <Text className={`text-center ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}>Don't have an account? Register</Text>
+        </Link>
+        <TextInput
+          className={`h-12 border rounded-lg px-4 mb-4 ${theme === 'dark' ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-300 text-black'}`}
+          placeholder="Email"
+          placeholderTextColor={theme === 'dark' ? '#9ca3af' : '#6b7280'}
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
+        {errors.email && <Text className="text-red-500 mb-4">{errors.email}</Text>}
 
-      <TextInput
-        className={`h-12 border rounded-lg px-4 mb-4 ${theme === 'dark' ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-300 text-black'}`}
-        placeholder="Password"
-        placeholderTextColor={theme === 'dark' ? '#9ca3af' : '#6b7280'}
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
-      {errors.password && <Text className="text-red-500 mb-4">{errors.password}</Text>}
+        <TextInput
+          className={`h-12 border rounded-lg px-4 mb-4 ${theme === 'dark' ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-300 text-black'}`}
+          placeholder="Password"
+          placeholderTextColor={theme === 'dark' ? '#9ca3af' : '#6b7280'}
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+        />
+        {errors.password && <Text className="text-red-500 mb-4">{errors.password}</Text>}
 
-      <TextInput
-        className={`h-12 border rounded-lg px-4 mb-6 ${theme === 'dark' ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-300 text-black'}`}
-        placeholder="Age"
-        placeholderTextColor={theme === 'dark' ? '#9ca3af' : '#6b7280'}
-        value={age}
-        onChangeText={setAge}
-        keyboardType="number-pad"
-      />
-      {errors.age && <Text className="text-red-500 mb-6">{errors.age}</Text>}
+        <TextInput
+          className={`h-12 border rounded-lg px-4 mb-6 ${theme === 'dark' ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-300 text-black'}`}
+          placeholder="Age"
+          placeholderTextColor={theme === 'dark' ? '#9ca3af' : '#6b7280'}
+          value={age}
+          onChangeText={setAge}
+          keyboardType="number-pad"
+        />
+        {errors.age && <Text className="text-red-500 mb-6">{errors.age}</Text>}
 
-      <CustomButton title="Login" onPress={handleLogin} />
-    </View>
+        <CustomButton title="Login" onPress={handleLogin} />
+      </View>
+    </ImageBackground>
   );
 }

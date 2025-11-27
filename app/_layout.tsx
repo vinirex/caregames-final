@@ -1,5 +1,6 @@
 import { ThemeProvider, useTheme } from "../context/ThemeContext";
 import { PointsProvider } from "../context/PointsContext";
+import { AuthProvider } from "../context/AuthContext";
 import { Slot } from "expo-router";
 import { View } from "react-native";
 
@@ -15,9 +16,11 @@ function LayoutContainer() {
 export default function RootLayout() {
   return (
     <ThemeProvider>
-      <PointsProvider>
-        <LayoutContainer />
-      </PointsProvider>
+      <AuthProvider>
+        <PointsProvider>
+          <LayoutContainer />
+        </PointsProvider>
+      </AuthProvider>
     </ThemeProvider>
   );
 }

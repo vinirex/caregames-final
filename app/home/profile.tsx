@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Text, View, Image, TextInput, ScrollView } from 'react-native';
+import { Text, View, Image, TextInput, ScrollView, TouchableOpacity } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
-import { useLocalSearchParams } from 'expo-router';
+import { Link } from 'expo-router';
+import { useAuth } from '../../context/AuthContext';
 import { FontAwesome } from '@expo/vector-icons';
-
 // Helper component for editable fields
 const EditableField = ({ label, value, onChangeText, placeholder, keyboardType = 'default' }: { label: string; value: string; onChangeText: (text: string) => void; placeholder: string; keyboardType?: 'default' | 'numeric' | 'email-address' | 'ascii-capable' | 'numbers-and-punctuation' | 'url' | 'number-pad' | 'phone-pad' | 'name-phone-pad' | 'decimal-pad' | 'twitter' | 'web-search' | 'visible-password'; }) => {
   const { theme } = useTheme();
@@ -23,24 +23,29 @@ const EditableField = ({ label, value, onChangeText, placeholder, keyboardType =
 };
 
 export default function ProfileScreen() {    
-  const { userEmail } = useLocalSearchParams<{ userEmail?: string }>();
+  const { userEmail } = useAuth();
   const { theme, colors } = useTheme();
   // In a real app, this data would come from your auth context or API
-  const [name, setName] = useState('Adeilton Santos');
-  const [birthday, setBirthday] = useState('01/01/1990');
-  const [address, setAddress] = useState('123 Main St, Anytown, USA');
+  const [name, setName] = useState('Nome do Usuário');
+  const [birthday, setBirthday] = useState('Aniversário');
+  const [address, setAddress] = useState('Endereço');
 
   return (
     <ScrollView className={`flex-1 ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'}`}>
       <View className="p-6">
-        <View className="flex-row items-center mb-10">
+        <View className="justify-between mb-8 flex-row items-center">
+          <Text className={`text-4xl font-bold ${theme === 'dark' ? 'text-white' : 'text-black'}`}>
+            Profile
+          </Text>
+        </View>
+        <View className="flex-row items-center mb-6">
           <Image
-            source={{ uri: 'https://via.placeholder.com/100' }} // Placeholder image
+            source={require('../../assets/images/profile-placeholder.png')} // Placeholder image
             className="w-24 h-24 rounded-full mr-6"
           />
           <View>
-            <Text className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-black'}`}>{name}</Text>
-            <Text className={`text-md mt-1 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>{userEmail || 'No email found'}</Text>
+            <Text className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-black'}`}>{name || 'User Name'}</Text>
+            <Text className={`text-md mt-1 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>{userEmail || 'user@example.com'}</Text>
           </View>
         </View>
 
