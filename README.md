@@ -125,29 +125,56 @@ my-expo-app/
 ### `/app/index.tsx` — **Login**
 
 * Tela inicial do aplicativo.
-* Realiza autenticação (placeholder) e redireciona para `/home`.
-* Integração com `AuthContext` para armazenar informações do usuário.
+* Realiza autenticação e valida credenciais do usuário.
+* Redireciona para `/home` após login bem-sucedido.
+* Integra `AuthContext` para armazenar token e dados do usuário.
 
 ### `/app/home/homeScreen.tsx` — **Home**
 
-* Tela principal após login.
-* Exibe vídeo de fundo, boas-vindas, botões de navegação (Cursos, Ranking) e pontuação do usuário.
+* Tela principal após autenticação.
+* Exibe saudação personalizada, pontuação atual e progresso do usuário.
+* Botões de navegação rápida para Cursos, Desafios, Ranking e Benefícios.
+* Tema dinâmico via `ThemeContext`.
 
-### `/app/courses.tsx` — **Cursos**
+### `/app/home/settings.tsx` — **Configurações**
 
-* Lista os cursos disponíveis.
-* Cada card abre os detalhes do curso.
-* Implementado com `ScrollView` e compatível com tema claro/escuro.
+* Gerencia preferências do usuário (modo escuro/claro, notificações).
+* Integrada com `ThemeContext` para alternância de tema.
+
+### `/app/home/profile.tsx` — **Perfil**
+
+* Exibe informações do usuário logado.
+* Permite visualizar estatísticas e histórico de pontos.
+* Acesso a dados armazenados no `AuthContext`.
+
+### `/app/desafios.tsx` — **Desafios**
+
+* Lista desafios disponíveis com pontuação associada.
+* Cada desafio exibe descrição, dificuldade e recompensa em pontos.
+* Integrado com `PointsContext` para atualizar pontuação ao completar.
 
 ### `/app/rankings.tsx` — **Ranking**
 
-* Exibe o ranking de usuários (leaderboard).
-* Usa `PointsContext` para obter a pontuação dos usuários.
+* Leaderboard de usuários ordenado por pontuação.
+* Consome dados do `PointsContext`.
+* Destaca posição do usuário atual.
+
+### `/app/wearables.tsx` — **Wearables**
+
+* Sincronização com dispositivos conectáveis (smartwatch, fitness tracker).
+* Importa dados de saúde e atividades.
+
+### `/app/beneficios.tsx` — **Benefícios**
+
+* Catalogo de resgates disponíveis.
+* Exibe custo em pontos para cada benefício.
+* Integrado com `PointsContext` para validar saldo antes de resgate.
 
 ### `/app/home/_layout.tsx` — **Layout da Home**
 
-* Define a navegação (Drawer/Stack) para a área de Home.
-* Não deve duplicar providers (ThemeProvider deve ser global em `app/_layout.tsx` quando aplicável).
+* Define navegação (Stack/Drawer) para seções internas de Home.
+* Providers globais configurados em nível raiz (`app/_layout.tsx`).
+
 
 ⭐ Imagens das Telas
 <div align="center">
