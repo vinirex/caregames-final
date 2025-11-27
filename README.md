@@ -151,7 +151,7 @@ my-expo-app/
 
 ⭐ Imagens das Telas
 <div align="center">
-Screenshot_20251127_130543_Expo Go](https://github.com/user-attachments/assets/2149d5d8-810a-47f3-b5cb-29d382d6ab08)
+  
 ![Screenshot_20251127_131452_Expo Go](https://github.com/user-attachments/assets/2cc39b73-f94d-4c28-899e-96e55a0fb71e) width="300"
 ![Screenshot_20251127_131438_Expo Go](https://github.com/user-attachments/assets/88d188aa-20be-49a5-96de-db205f699005) width="300"
 ![Screenshot_20251126_234624_Expo Go](https://github.com/user-attachments/assets/3cd78d73-bb19-4420-b41a-aad395d7ad72) width="300"
