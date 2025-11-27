@@ -1,16 +1,18 @@
-# 📘 Future Skillzz
+# 📘 CareGames
 
 ## 👥 Integrantes do Projeto
 
 * Vinicius Silva RM553240
 * Victor Didoff RM552965
 * Matheus Zottiz RM94119
+* Diogo Julio RM94119
+* Jonata Rafael RM552939
 ---
 
 ## 📱 Sobre o Projeto
 
-**Future Skillzz** é um aplicativo mobile desenvolvido com **React Native**, **Expo** e **Expo Router**.
-O app permite que usuários explorem cursos, acompanhem progresso, disputem rankings e desenvolvam habilidades essenciais para o mercado de trabalho do futuro.
+**CareGames** é um aplicativo mobile desenvolvido com **React Native**, **Expo** e **Expo Router**.
+O app permite que usuários explorem cursos, acompanhem progresso, disputem rankings e desenvolvam habilidades essenciais para o mercado de trabalho do futuro, com foco em gamificação e saúde mental.
 
 ---
 
@@ -89,10 +91,11 @@ my-expo-app/
 │   │
 │   ├── index.tsx             # Tela de Login (rota inicial)
 │   ├── rankings.tsx          # Tela: Ranking de Usuários
-│   ├── courses.tsx           # Tela: Lista de Cursos
+│   ├── wearables.tsx         # Tela: Conexão com wearable
+│   ├── desafios.tsx          # Tela: Lista de Desafios e pontos
+│   ├── beneficios.tsx        # Tela: Lista de Beneficios e seus preços/pontos necessários
 │
-├── assets/                   # Vídeos, imagens, ícones, fontes
-│   ├── videos/
+├── assets/                   # imagens, ícones, fontes
 │   ├── images/
 │
 ├── components/               # Componentes reutilizáveis
@@ -146,17 +149,24 @@ my-expo-app/
 * Define a navegação (Drawer/Stack) para a área de Home.
 * Não deve duplicar providers (ThemeProvider deve ser global em `app/_layout.tsx` quando aplicável).
 
-⭐ Imagem das Telas
-<div align="center"> <img src="https://github.com/user-attachments/assets/80e2857e-8d30-457e-82f3-dd260ab08e64" width="300" /> <img src="https://github.com/user-attachments/assets/f694e7dd-28bf-464c-bec5-25fdb261317d" width="300" /> <img src="https://github.com/user-attachments/assets/e00f84d6-5e29-4ba2-aa12-92f78ba6527e" width="300" /> <img src="https://github.com/user-attachments/assets/cd7e52fe-c830-4979-a09b-490416917e95" width="300" /> <img src="https://github.com/user-attachments/assets/468ed70b-0928-49d1-b92d-666a011c1cfb" width="300" /> <img src="https://github.com/user-attachments/assets/f5d0960a-88b6-4691-9361-86810d2efc66" width="300" /> <img src="https://github.com/user-attachments/assets/e073cc18-c1a3-4ab6-bbdc-06f0e6c24c0f" width="300" /> <img src="https://github.com/user-attachments/assets/1ab0c957-aff8-4a3a-b03d-2b0fcf831f61" width="300" /> 
+⭐ Imagens das Telas
+<div align="center">
+  <img src="[URL_DA_IMAGEM_1]" width="300" />
+  <img src="[URL_DA_IMAGEM_2]" width="300" />
+  <img src="[URL_DA_IMAGEM_3]" width="300" />
+  <img src="[URL_DA_IMAGEM_4]" width="300" />
+  <img src="[URL_DA_IMAGEM_5]" width="300" />
+  <img src="[URL_DA_IMAGEM_6]" width="300" />
+  <img src="[URL_DA_IMAGEM_7]" width="300" />
+  <img src="[URL_DA_IMAGEM_8]" width="300" />
 </div>
 
 
 ## 🎥 Vídeo de Demonstração
 
 <div align="center">
-
-<a href="https://youtube.com/shorts/mH-3y1-NzCU?feature=share">
-  <img src="https://img.youtube.com/vi/mH-3y1-NzCU/0.jpg" width="300" />
+<a href="[URL_DO_VIDEO_DEMONSTRACAO]">
+  <img src="[URL_DA_THUMBNAIL_DO_VIDEO]" width="300" />
 </a>
 
 </div>
@@ -169,4 +179,3 @@ my-expo-app/
 * Evite colocar classes de layout diretamente em `ScrollView`; use `contentContainerStyle` ou um `View` interno.
 * Para sombras cross-platform, aplique `shadow-*` em `View` e `elevation` para Android; `TouchableOpacity` não recebe sombra diretamente.
 * Arquivos em `app/` criam rotas automaticamente com Expo Router; use `_layout.tsx` para layouts e providers de rota.
-
