@@ -151,23 +151,23 @@ my-expo-app/
 
 ⭐ Imagens das Telas
 <div align="center">
-  <img src="https://github.com/user-attachments/assets/2cc39b73-f94d-4c28-899e-96e55a0fb71e" width="30" />
-  <img src="https://github.com/user-attachments/assets/88d188aa-20be-49a5-96de-db205f699005" width="30" />
-  <img src="https://github.com/user-attachments/assets/3cd78d73-bb19-4420-b41a-aad395d7ad72" width="30" />
-  <img src="https://github.com/user-attachments/assets/92355a6c-0bfb-4d5c-b2d2-986d9cc0aa61" width="30" />
-  <img src="https://github.com/user-attachments/assets/431ab2a5-e166-4c74-a885-69c12fa00ede" width="30" />
-  <img src="https://github.com/user-attachments/assets/c307bb41-0fd2-4fbe-b7f7-2aba6409b7b0" width="30" />
-  <img src="https://github.com/user-attachments/assets/41fdd077-4066-4afb-94f8-e0d4b836e04e" width="30" />
-  <img src="https://github.com/user-attachments/assets/1780072d-6060-449e-8316-2415112214d6" width="30" />
+  <img src="https://github.com/user-attachments/assets/2cc39b73-f94d-4c28-899e-96e55a0fb71e" width="300" />
+  <img src="https://github.com/user-attachments/assets/88d188aa-20be-49a5-96de-db205f699005" width="300" />
+  <img src="https://github.com/user-attachments/assets/3cd78d73-bb19-4420-b41a-aad395d7ad72" width="300" />
+  <img src="https://github.com/user-attachments/assets/92355a6c-0bfb-4d5c-b2d2-986d9cc0aa61" width="300" />
+  <img src="https://github.com/user-attachments/assets/431ab2a5-e166-4c74-a885-69c12fa00ede" width="300" />
+  <img src="https://github.com/user-attachments/assets/c307bb41-0fd2-4fbe-b7f7-2aba6409b7b0" width="300" />
+  <img src="https://github.com/user-attachments/assets/41fdd077-4066-4afb-94f8-e0d4b836e04e" width="300" />
+  <img src="https://github.com/user-attachments/assets/1780072d-6060-449e-8316-2415112214d6" width="300" />
 </div>
 
 
 ## 🎥 Vídeo de Demonstração
 
-<div align="center">
-<a href="[URL_DO_VIDEO_DEMONSTRACAO]">
-  <img src="[URL_DA_THUMBNAIL_DO_VIDEO]" width="300" />
+<a href="https://www.youtube.com/shorts/dlENchEyoeY">
+  <img src="https://img.youtube.com/vi/dlENchEyoeY/0.jpg" width="300" alt="Vídeo YouTube Shorts">
 </a>
+
 
 </div>
 
