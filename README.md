@@ -11,8 +11,10 @@
 
 ## 📱 Sobre o Projeto
 
-**CareGames** é um aplicativo mobile desenvolvido com **React Native**, **Expo** e **Expo Router**.
-O app permite que usuários explorem cursos, acompanhem progresso, disputem rankings e desenvolvam habilidades essenciais para o mercado de trabalho do futuro, com foco em gamificação e saúde mental.
+**CareGames** é um aplicativo mobile desenvolvido com **React Native**, **Expo** e Expo Router.
+A plataforma permite que os usuários invistam em sua saúde, acompanhem seu progresso e participem de rankings competitivos.
+O aplicativo tem como principal objetivo incentivar hábitos saudáveis por meio da gamificação, promovendo também o cuidado com a saúde mental de forma interativa e motivadora.
+Além disso, o app é integrado a dispositivos wearables e conta com um sistema de recompensas, que estimula os usuários a manterem consistência em suas atividades e metas de saúde.
 
 ---
 
