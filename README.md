@@ -1,4 +1,8 @@
-# 📘 CareGames
+<div align="center">
+  <img src="./assets/icon.png" width="150" alt="CareGames+ Logo" />
+  
+  # 📘 CareGames+
+</div>
 
 ## 👥 Integrantes do Projeto
 
@@ -11,7 +15,7 @@
 
 ## 📱 Sobre o Projeto
 
-**CareGames** é um aplicativo mobile desenvolvido com **React Native**, **Expo** e Expo Router.
+**CareGames+** é um aplicativo mobile desenvolvido com **React Native**, **Expo** e Expo Router.
 A plataforma permite que os usuários invistam em sua saúde, acompanhem seu progresso e participem de rankings competitivos.
 O aplicativo tem como principal objetivo incentivar hábitos saudáveis por meio da gamificação, promovendo também o cuidado com a saúde mental de forma interativa e motivadora.
 Além disso, o app é integrado a dispositivos wearables e conta com um sistema de recompensas, que estimula os usuários a manterem consistência em suas atividades e metas de saúde.
@@ -82,22 +86,24 @@ No diretório do projeto, execute:
 O projeto usa **Expo Router**, portanto arquivos dentro de `app/` viram automaticamente rotas.
 
 ```
-my-expo-app/
+caregames-final/
 ├── .expo/                    # Arquivos internos gerados pelo Expo
 ├── app/                      # Rotas e telas do aplicativo
 │   ├── home/                 # Seção Home (rotas agrupadas)
-│   │   ├── _layout.tsx       # Layout da Home (Stack/Drawer/tema)
+│   │   ├── _layout.tsx       # Layout da Home (Drawer + navegação)
 │   │   ├── homeScreen.tsx    # Tela principal Home
 │   │   ├── settings.tsx      # Tela: Configurações (Dark Mode)
-│   │   ├── profile.tsx       # Tela: Informações de Usuário
+│   │   ├── profile.tsx       # Tela: Perfil do Usuário (upload de foto)
 │   │
+│   ├── _layout.tsx           # Layout raiz (Providers globais)
 │   ├── index.tsx             # Tela de Login (rota inicial)
+│   ├── register.tsx          # Tela de Cadastro de Usuário
 │   ├── rankings.tsx          # Tela: Ranking de Usuários
-│   ├── wearables.tsx         # Tela: Conexão com wearable
-│   ├── desafios.tsx          # Tela: Lista de Desafios e pontos
-│   ├── beneficios.tsx        # Tela: Lista de Beneficios e seus preços/pontos necessários
+│   ├── wearables.tsx         # Tela: Conexão IoT com wearable (WebSocket)
+│   ├── desafios.tsx          # Tela: Lista de Desafios (com upload de foto)
+│   ├── beneficios.tsx        # Tela: Benefícios e resgate por pontos
 │
-├── assets/                   # imagens, ícones, fontes
+├── assets/                   # Imagens, ícones, fontes
 │   ├── images/
 │
 ├── components/               # Componentes reutilizáveis
@@ -106,11 +112,15 @@ my-expo-app/
 │   ├── EditScreenInfo.tsx
 │   ├── ScreenContent.tsx
 │
-├── context/                  # Contextos globais
-│   ├── AuthContext.tsx
-│   ├── PointsContext.tsx
-│   ├── ThemeContext.tsx
-│   ├── theme.ts
+├── context/                  # Contextos globais (estado da aplicação)
+│   ├── AuthContext.tsx       # Autenticação + sessão persistida (AsyncStorage)
+│   ├── PointsContext.tsx     # Sistema de pontos (gamificação)
+│   ├── ThemeContext.tsx      # Tema claro/escuro persistido (AsyncStorage)
+│   ├── theme.ts              # Definição de cores dos temas
+│
+├── services/                 # Serviços e integrações
+│   ├── api.ts                # API simulada (banco de dados via AsyncStorage)
+│   ├── IoTService.ts         # Serviço IoT via WebSocket (dados em tempo real)
 │
 ├── node_modules/             # Dependências instaladas
 ├── .gitignore                # Arquivos ignorados pelo Git
@@ -128,53 +138,69 @@ my-expo-app/
 
 * Tela inicial do aplicativo.
 * Realiza autenticação e valida credenciais do usuário.
-* Redireciona para `/home` após login bem-sucedido.
-* Integra `AuthContext` para armazenar token e dados do usuário.
+* Validação de e-mail, senha forte e idade mínima (18 anos).
+* **Sessão persistida com AsyncStorage** — se o usuário já estiver logado, redireciona automaticamente para `/home`.
+* Integra `AuthContext` para gerenciar sessão e `api.ts` para autenticação no banco simulado.
+
+### `/app/register.tsx` — **Cadastro**
+
+* Tela de registro de novos usuários.
+* Validação completa de campos (e-mail, senha forte, idade).
+* **Salva credenciais no banco de dados simulado via API** (`AsyncStorage`).
+* Redireciona para a tela de login após cadastro bem-sucedido.
 
 ### `/app/home/homeScreen.tsx` — **Home**
 
 * Tela principal após autenticação.
 * Exibe saudação personalizada, pontuação atual e progresso do usuário.
-* Botões de navegação rápida para Cursos, Desafios, Ranking e Benefícios.
+* Botões de navegação rápida para Desafios, Ranking, Wearables e Benefícios.
+* **Botão de logout** com confirmação para sair da conta.
 * Tema dinâmico via `ThemeContext`.
 
 ### `/app/home/settings.tsx` — **Configurações**
 
-* Gerencia preferências do usuário (modo escuro/claro, notificações).
+* Gerencia preferências do usuário (modo escuro/claro).
 * Integrada com `ThemeContext` para alternância de tema.
+* **Preferência de tema persistida com AsyncStorage** por usuário.
 
 ### `/app/home/profile.tsx` — **Perfil**
 
-* Exibe informações do usuário logado.
-* Permite visualizar estatísticas e histórico de pontos.
-* Acesso a dados armazenados no `AuthContext`.
+* Exibe informações do usuário logado (nome, e-mail, aniversário, endereço).
+* **Upload de foto de perfil** via `expo-image-picker` (acesso à galeria nativa).
+* **Foto salva localmente no AsyncStorage** para carregamento instantâneo.
+* **Foto enviada para a API simulada** para persistência no banco de dados.
+* **Botão de logout** com confirmação.
 
 ### `/app/desafios.tsx` — **Desafios**
 
 * Lista desafios disponíveis com pontuação associada.
-* Cada desafio exibe descrição, dificuldade e recompensa em pontos.
+* Cada desafio exibe descrição e recompensa em pontos.
+* **Desafios com comprovação por foto** via `expo-image-picker`.
 * Integrado com `PointsContext` para atualizar pontuação ao completar.
 
 ### `/app/rankings.tsx` — **Ranking**
 
 * Leaderboard de usuários ordenado por pontuação.
 * Consome dados do `PointsContext`.
-* Destaca posição do usuário atual.
+* Destaca posição do usuário atual ("Você").
 
-### `/app/wearables.tsx` — **Wearables**
+### `/app/wearables.tsx` — **Wearables (IoT)**
 
-* Sincronização com dispositivos conectáveis (smartwatch, fitness tracker).
-* Importa dados de saúde e atividades.
+* **Conexão em tempo real via WebSocket** com servidor de eco.
+* Simula recebimento de dados IoT de um wearable (passos, BPM).
+* Dados atualizados automaticamente a cada 3 segundos.
+* Pontos adicionados dinamicamente conforme passos recebidos.
+* Instruções de integração com broker MQTT real documentadas no código.
 
 ### `/app/beneficios.tsx` — **Benefícios**
 
-* Catalogo de resgates disponíveis.
+* Catálogo de resgates disponíveis (spa, massagem, nutricionista, academia).
 * Exibe custo em pontos para cada benefício.
 * Integrado com `PointsContext` para validar saldo antes de resgate.
 
 ### `/app/home/_layout.tsx` — **Layout da Home**
 
-* Define navegação (Stack/Drawer) para seções internas de Home.
+* Define navegação via Drawer para seções internas de Home (Início, Perfil, Configurações).
 * Providers globais configurados em nível raiz (`app/_layout.tsx`).
 
 
@@ -200,6 +226,45 @@ my-expo-app/
 
 </div>
 
+---
+
+## 🆕 Funcionalidades da Sprint 4
+
+### 📦 Persistência de Dados com AsyncStorage
+
+* **Sessão do usuário** — Login persistido, o app lembra do usuário logado ao reabrir.
+* **Preferência de tema** — Dark mode salvo por usuário, carregado automaticamente.
+* **Foto de perfil** — URI da foto salva localmente por usuário para carregamento instantâneo.
+* **Banco de dados simulado** — Credenciais e dados de perfil salvos em AsyncStorage simulando um backend.
+
+### 🔌 Integração com API Simulada (`services/api.ts`)
+
+* `register(email, password, age)` — Cadastro de novos usuários no banco simulado.
+* `login(email, password)` — Autenticação com validação de credenciais.
+* `uploadProfilePhoto(email, photoUri)` — Upload de foto de perfil para o banco.
+* `getProfilePhoto(email)` — Recuperação de foto de perfil do banco.
+* Usuário de teste padrão: `test@test.com` / `Test1234`.
+
+### 📷 Integração com API Nativa — `expo-image-picker`
+
+* **Foto de perfil** — Usuário pode selecionar foto da galeria com recorte 1:1.
+* **Comprovação de desafios** — Alguns desafios exigem foto como prova de conclusão.
+* Permissões de acesso à galeria solicitadas automaticamente.
+
+### 🌐 Comunicação em Tempo Real — WebSocket (IoT)
+
+* **Serviço IoT** (`services/IoTService.ts`) conecta via WebSocket a um servidor de eco.
+* Simula recebimento de dados de um wearable: **passos**, **BPM** e **temperatura**.
+* Dados atualizados a cada 3 segundos em tempo real.
+* Código documentado com instruções para integração com broker **MQTT real** (ex.: `test.mosquitto.org`).
+
+### 🔐 Autenticação Completa
+
+* Registro e login com validação de e-mail, senha forte e idade.
+* Logout com confirmação disponível na Home e no Perfil.
+* Sessão persistida — não precisa logar novamente ao reabrir o app.
+
+---
 
 ## 🧭 Boas práticas e observações
 
@@ -208,3 +273,4 @@ my-expo-app/
 * Evite colocar classes de layout diretamente em `ScrollView`; use `contentContainerStyle` ou um `View` interno.
 * Para sombras cross-platform, aplique `shadow-*` em `View` e `elevation` para Android; `TouchableOpacity` não recebe sombra diretamente.
 * Arquivos em `app/` criam rotas automaticamente com Expo Router; use `_layout.tsx` para layouts e providers de rota.
+* Contextos utilizam `useCallback` e `useMemo` para otimização de performance e evitar re-renders desnecessários.
