@@ -1,15 +1,18 @@
 import React from 'react';
-import { Link } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 import { Text, View, ImageBackground, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { FontAwesome, FontAwesome5 } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import { usePoints } from '../../context/PointsContext';
+import { useAuth } from '../../context/AuthContext';
 import CarePlusDark from '../../assets/images/CarePlusDark.png';
 import CarePlusLight from '../../assets/images/CarePlusLight.png';
 
 export default function HomeScreen() {
   const { theme, colors } = useTheme();
   const { points } = usePoints();
+  const { logout } = useAuth();
+  const router = useRouter();
 
   const backgroundImage = theme === 'dark'
     ? CarePlusDark
@@ -25,6 +28,24 @@ export default function HomeScreen() {
 
       
       <View className={`absolute inset-0 flex-2 items-center justify-center p-6`}>
+        <TouchableOpacity
+          className="absolute top-12 right-6 z-10"
+          onPress={() => {
+            Alert.alert('Sair', 'Deseja realmente sair da conta?', [
+              { text: 'Cancelar', style: 'cancel' },
+              {
+                text: 'Sair',
+                style: 'destructive',
+                onPress: async () => {
+                  await logout();
+                  router.replace('/');
+                },
+              },
+            ]);
+          }}
+        >
+          <FontAwesome name="sign-out" size={26} color="#ef4444" />
+        </TouchableOpacity>
         <Text className={`text-2xl font-semibold mb-3 ${theme === 'dark' ? 'text-white' : 'text-black'}`}>Bem-vindo ao CareGamesPlus </Text>
         <View className="flex-col justify-around w-full max-w-md">
           <View className="flex-row justify-around w-full mb-4">

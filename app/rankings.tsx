@@ -51,8 +51,8 @@ export default function RankingsScreen() {
 
       <View className="mb-4 flex-row justify-between p-4 rounded-lg bg-blue-500">
         <Text className="text-white font-bold text-lg w-1/6 text-center">Pos.</Text>
-        <Text className="text-white font-bold text-lg w-3/6">Name</Text>
-        <Text className="text-white font-bold text-lg w-2/6 text-right">Points</Text>
+        <Text className="text-white font-bold text-lg w-3/6">Nome</Text>
+        <Text className="text-white font-bold text-lg w-2/6 text-right">Pontos</Text>
       </View>
 
       {rankings.map((user, index) => {

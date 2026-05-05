@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, ReactNode } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useCallback, useMemo } from 'react';
 
 interface PointsContextData {
   points: number;
@@ -11,16 +11,21 @@ const PointsContext = createContext<PointsContextData | undefined>(undefined);
 export const PointsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [points, setPoints] = useState(0);
 
-  const addPoints = (amount: number) => {
+  const addPoints = useCallback((amount: number) => {
     setPoints(prevPoints => prevPoints + amount);
-  };
+  }, []);
 
-  const spendPoints = (amount: number) => {
+  const spendPoints = useCallback((amount: number) => {
     setPoints(prevPoints => Math.max(0, prevPoints - amount));
-  };
+  }, []);
+
+  const value = useMemo(
+    () => ({ points, addPoints, spendPoints }),
+    [points, addPoints, spendPoints]
+  );
 
   return (
-    <PointsContext.Provider value={{ points, addPoints, spendPoints }}>
+    <PointsContext.Provider value={value}>
       {children}
     </PointsContext.Provider>
   );

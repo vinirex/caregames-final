@@ -1,88 +1,61 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useRouter } from 'expo-router';
-import { Text, View, TextInput, Alert, ImageBackground, ActivityIndicator } from 'react-native';
+import { Text, View, TextInput, Alert, ImageBackground } from 'react-native';
 import '../global.css';
 import { useTheme } from '../context/ThemeContext';
-import { useAuth } from '../context/AuthContext';
 import { CustomButton } from '../components/CustomButton';
 import { api } from '../services/api';
 
-export default function LoginScreen() {
+export default function RegisterScreen() {
   const router = useRouter();
-  const { login, userEmail, isLoading } = useAuth();
-  const { theme, colors } = useTheme();
-
-  useEffect(() => {
-    if (!isLoading && userEmail) {
-      // Automatic redirection if the user is already logged in via AsyncStorage
-      router.replace('/home');
-    }
-  }, [userEmail, isLoading]);
+  const { theme } = useTheme();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [age, setAge] = useState('');
-  const [errors, setErrors] = useState<{ email?: string; password?: string; age?: string; api?: string }>({});
+  const [errors, setErrors] = useState<{ email?: string; password?: string; age?: string }>({});
 
   const validate = () => {
-    const newErrors: { email?: string; password?: string; age?: string; api?: string } = {};
+    const newErrors: { email?: string; password?: string; age?: string } = {};
 
-    // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       newErrors.email = 'Por favor, insira um endereço de e-mail válido.';
     }
 
-    // Password validation (strong password)
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/;
     if (!passwordRegex.test(password)) {
       newErrors.password = 'A senha deve ter pelo menos 8 caracteres, incluindo uma letra maiúscula, uma minúscula e um número.';
     }
 
-    // Age validation
     const parsedAge = parseInt(age, 10);
     if (isNaN(parsedAge) || parsedAge < 18) {
-      newErrors.age = 'Você deve ter pelo menos 18 anos para entrar.';
+      newErrors.age = 'Você deve ter pelo menos 18 anos para se cadastrar.';
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleLogin = async () => {
+  const handleRegister = async () => {
     if (validate()) {
-      const response = await api.login(email, password);
+      const response = await api.register(email, password, age);
       if (response.success) {
-        await login(email);
-        router.push('/home');
+        Alert.alert('Cadastro Realizado!', 'Agora você pode fazer login.');
+        router.push('/');
       } else {
-        setErrors(prev => ({ ...prev, api: response.message }));
+        Alert.alert('Falha no Cadastro', response.message);
       }
     }
   };
 
-  if (isLoading) {
-    return (
-      <View className={`flex-1 justify-center items-center ${theme === 'dark' ? 'bg-gray-900' : 'bg-white'}`}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
-  }
-
   return (
     <ImageBackground source={require('../assets/images/CarePlusDark.png')} style={{ flex: 1, justifyContent: 'center' }} resizeMode="cover">
       <View className={`flex-1 justify-center p-6`}>
-        <Text className={`text-3xl font-bold text-center mb-8 text-white`}>Care Games + Login</Text>
-        <Link href="/register" className="mb-6">
-          <Text className={`text-center ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}>Não tem uma conta? Cadastre-se</Text>
+        <Text className={`text-3xl font-bold text-center mb-8 text-white`}>Criar Conta</Text>
+        <Link href="/" className="mb-6">
+          <Text className={`text-center ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}>Já tem uma conta? Entrar</Text>
         </Link>
-
-        {errors.api && (
-          <Text className="text-red-500 font-bold text-center mb-4 bg-red-100/10 p-2 rounded">
-            {errors.api}
-          </Text>
-        )}
-
         <TextInput
           className={`h-12 border rounded-lg px-4 mb-4 ${theme === 'dark' ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-300 text-black'}`}
           placeholder="E-mail"
@@ -114,13 +87,7 @@ export default function LoginScreen() {
         />
         {errors.age && <Text className="text-red-500 mb-6">{errors.age}</Text>}
 
-        <CustomButton title="Entrar" onPress={handleLogin} />
-        
-        <View className="mt-8">
-          <Text className="text-gray-300 text-center text-xs">Para testar sem conexão ao banco, use:</Text>
-          <Text className="text-gray-300 text-center text-xs font-bold">E-mail: test@test.com</Text>
-          <Text className="text-gray-300 text-center text-xs font-bold">Senha: Test1234</Text>
-        </View>
+        <CustomButton title="Cadastrar" onPress={handleRegister} />
       </View>
     </ImageBackground>
   );

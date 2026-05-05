@@ -1,34 +1,59 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'expo-router';
-import { Text, View, TouchableOpacity, Alert, Switch } from 'react-native';
+import { Text, View, TouchableOpacity, Alert, Switch, ActivityIndicator } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { usePoints } from '../context/PointsContext';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import { FontAwesome5 } from '@expo/vector-icons';
+import { ioTService, IoTData } from '../services/IoTService';
 
 export default function WearablesScreen() {
   const { theme, colors } = useTheme();
   const { addPoints } = usePoints();
 
   const [isWearableConnected, setIsWearableConnected] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
   const [steps, setSteps] = useState(0);
   const [bpm, setBpm] = useState(0);
 
-  const handleConnectWearable = () => {
-    setIsWearableConnected(prev => !prev);
-    if (!isWearableConnected) {
-      Alert.alert('Conectado!', 'Seu wearable foi conectado com sucesso.');
-      // Simulate data reception
-      const randomSteps = Math.floor(Math.random() * 5000) + 5000; // 5000-10000 steps
-      const randomBpm = Math.floor(Math.random() * 30) + 70; // 70-100 bpm
-      setSteps(randomSteps);
-      setBpm(randomBpm);
-      addPoints(Math.floor(randomSteps / 100)); // 1 point per 100 steps
-      Alert.alert('Pontos Ganhos!', `Você ganhou ${Math.floor(randomSteps / 100)} pontos por seus passos!`);
+  useEffect(() => {
+    let unsubscribe: (() => void) | null = null;
+
+    if (isWearableConnected) {
+      setIsConnecting(true);
+      ioTService.connect();
+      
+      // Simulate connection delay for UI feedback
+      setTimeout(() => {
+        setIsConnecting(false);
+        Alert.alert('Conectado!', 'Seu wearable foi conectado com sucesso via WebSocket.');
+      }, 1000);
+
+      unsubscribe = ioTService.subscribe((data: IoTData) => {
+        setSteps(data.steps);
+        setBpm(data.heartRate);
+        
+        // Example: Add points for steps received dynamically
+        if (data.steps > 0 && data.steps % 10 === 0) {
+          addPoints(1);
+        }
+      });
     } else {
-      Alert.alert('Desconectado!', 'Seu wearable foi desconectado.');
+      ioTService.disconnect();
       setSteps(0);
       setBpm(0);
+    }
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+      ioTService.disconnect();
+    };
+  }, [isWearableConnected]);
+
+  const handleConnectWearable = (value: boolean) => {
+    setIsWearableConnected(value);
+    if (!value) {
+      Alert.alert('Desconectado!', 'Seu wearable foi desconectado.');
     }
   };
 
@@ -49,7 +74,7 @@ export default function WearablesScreen() {
       <View className={`p-6 rounded-2xl shadow-lg shadow-black/40 mb-6 ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100'}`}>
         <View className="flex-row items-center justify-between mb-4">
           <Text className={`text-xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-black'}`}>
-            Conectar Wearable
+            Conectar Wearable (IoT)
           </Text>
           <Switch
             value={isWearableConnected}
@@ -60,15 +85,22 @@ export default function WearablesScreen() {
         </View>
         <Text className={`text-base ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
           {isWearableConnected
-            ? 'Seu dispositivo está conectado e sincronizando dados.'
-            : 'Conecte seu wearable para sincronizar passos e batimentos cardíacos.'}
+            ? 'Seu dispositivo está conectado via WebSocket recebendo dados em tempo real.'
+            : 'Ative para conectar seu wearable simulado e receber dados IoT em tempo real.'}
         </Text>
       </View>
 
-      {isWearableConnected && (
+      {isConnecting && (
+        <View className="items-center justify-center p-6">
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text className={`mt-4 ${theme === 'dark' ? 'text-white' : 'text-black'}`}>Conectando ao broker IoT...</Text>
+        </View>
+      )}
+
+      {isWearableConnected && !isConnecting && (
         <View className={`p-6 rounded-2xl shadow-lg shadow-black/40 ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100'}`}>
           <Text className={`text-xl font-semibold mb-4 ${theme === 'dark' ? 'text-white' : 'text-black'}`}>
-            Dados do Wearable
+            Dados em Tempo Real
           </Text>
           <View className="flex-row items-center mb-3">
             <FontAwesome5 name="shoe-prints" size={24} color={colors.primary} />
@@ -82,19 +114,13 @@ export default function WearablesScreen() {
               BPM: {bpm}
             </Text>
           </View>
-          <TouchableOpacity
-            onPress={() => {
-              const newSteps = Math.floor(Math.random() * 2000) + 1000; // Simulate more steps
-              const newBpm = Math.floor(Math.random() * 10) + 70;
-              setSteps(prev => prev + newSteps);
-              setBpm(newBpm);
-              addPoints(Math.floor(newSteps / 100));
-              Alert.alert('Dados Atualizados!', `Você ganhou ${Math.floor(newSteps / 100)} pontos por ${newSteps} passos adicionais!`);
-            }}
-            className={`mt-6 p-3 rounded-lg items-center ${theme === 'dark' ? 'bg-blue-700' : 'bg-blue-500'}`}
-          >
-            <Text className="text-white font-bold">Sincronizar Dados</Text>
-          </TouchableOpacity>
+          
+          <View className="mt-6 flex-row items-center justify-center">
+            <ActivityIndicator size="small" color="green" />
+            <Text className={`ml-2 text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+              Aguardando transmissão MQTT/WS...
+            </Text>
+          </View>
         </View>
       )}
     </View>

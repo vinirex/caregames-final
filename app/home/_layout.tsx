@@ -16,9 +16,9 @@ export  function AppLayout() {
 export default function DrawerLayout() {
   return (
     <Drawer>
-      <Drawer.Screen name="homeScreen" options={{ title: 'Home' }} />
-      <Drawer.Screen name="profile" options={{ title: 'Profile' }} />
-      <Drawer.Screen name="settings" options={{ title: 'Settings' }} />
+      <Drawer.Screen name="homeScreen" options={{ title: 'Início' }} />
+      <Drawer.Screen name="profile" options={{ title: 'Perfil' }} />
+      <Drawer.Screen name="settings" options={{ title: 'Configurações' }} />
     </Drawer>
   );
 }
