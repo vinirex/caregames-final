@@ -24,6 +24,15 @@ export default function LoginScreen() {
   const [age, setAge] = useState('');
   const [errors, setErrors] = useState<{ email?: string; password?: string; age?: string; api?: string }>({});
 
+  useEffect(() => {
+    if (Object.keys(errors).length > 0) {
+      const timer = setTimeout(() => {
+        setErrors({});
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [errors]);
+
   const validate = () => {
     const newErrors: { email?: string; password?: string; age?: string; api?: string } = {};
 
@@ -70,9 +79,12 @@ export default function LoginScreen() {
   }
 
   return (
-    <ImageBackground source={require('../assets/images/CarePlusDark.png')} style={{ flex: 1, justifyContent: 'center' }} resizeMode="cover">
-      <View className={`flex-1 justify-center p-6`}>
-        <Text className={`text-3xl font-bold text-center mb-8 text-white`}>Care Games + Login</Text>
+    <ImageBackground source={require('../assets/images/CarePlusDark.png')} style={{ flex: 1 }} resizeMode="cover">
+      <View className={`flex-1 justify-end p-6 pb-24`}>
+        <View className="mb-8">
+          <Text className="text-4xl font-extrabold text-center text-white tracking-wide">Care Games +</Text>
+          <Text className="text-2xl font-medium text-center text-blue-400 mt-1">Login</Text>
+        </View>
         <Link href="/register" className="mb-6">
           <Text className={`text-center ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}>Não tem uma conta? Cadastre-se</Text>
         </Link>
@@ -116,10 +128,10 @@ export default function LoginScreen() {
 
         <CustomButton title="Entrar" onPress={handleLogin} />
         
-        <View className="mt-8">
-          <Text className="text-gray-300 text-center text-xs">Para testar sem conexão ao banco, use:</Text>
-          <Text className="text-gray-300 text-center text-xs font-bold">E-mail: test@test.com</Text>
-          <Text className="text-gray-300 text-center text-xs font-bold">Senha: Test1234</Text>
+        <View className="mt-8 bg-gray-900/60 p-4 rounded-xl border border-gray-700/50">
+          <Text className="text-gray-300 text-center text-xs mb-1">Para testar sem conexão ao banco, use:</Text>
+          <Text className="text-white text-center text-sm font-bold">E-mail: test@test.com</Text>
+          <Text className="text-white text-center text-sm font-bold">Senha: Test1234</Text>
         </View>
       </View>
     </ImageBackground>
