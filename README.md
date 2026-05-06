@@ -206,11 +206,10 @@ caregames-final/
 
 ⭐ Imagens das Telas
 <div align="center">
-  <img src="https://github.com/user-attachments/assets/2cc39b73-f94d-4c28-899e-96e55a0fb71e" width="220" />
+  <img src="https://github.com/user-attachments/assets/2960d58d-c8ef-4847-97fa-462c341d5f04" width="220" alt="logo" />
   <img src="https://github.com/user-attachments/assets/91edaa47-d846-4b59-b6a6-e37a79047d48" width="220" alt="home" />
   <img src="https://github.com/user-attachments/assets/e53d48a5-43bc-4f0c-a335-4e4ab03162dd" width="220" alt="IOT" />
   <img src="https://github.com/user-attachments/assets/d2f24550-b642-44db-8419-2b51d0556057" width="220" alt="challenges" />
-  <img src="https://github.com/user-attachments/assets/2960d58d-c8ef-4847-97fa-462c341d5f04" width="220" alt="logo" />
   <img src="https://github.com/user-attachments/assets/41373d5b-e31a-487a-9dd0-37314348e845" width="220" alt="login" />
   <img src="https://github.com/user-attachments/assets/fa3235f0-c5ce-4a1a-9165-ded0dd6698fa" width="220" alt="register" />
   <img src="https://github.com/user-attachments/assets/3cd78d73-bb19-4420-b41a-aad395d7ad72" width="220" />
@@ -224,8 +223,8 @@ caregames-final/
 
 ## 🎥 Vídeo de Demonstração
 
-<a href="https://www.youtube.com/shorts/dlENchEyoeY">
-  <img src="https://img.youtube.com/vi/dlENchEyoeY/0.jpg" width="300" alt="Vídeo YouTube Shorts">
+<a href="https://www.youtube.com/shorts/ahtzK5m1Sm8">
+  <img src="https://img.youtube.com/vi/ahtzK5m1Sm8/0.jpg" width="300" alt="Vídeo YouTube Shorts">
 </a>
 
 
