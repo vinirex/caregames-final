@@ -29,9 +29,15 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.vinicius.caregames",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0a1929"
+      }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "a60c3fdd-2a2b-4c47-9ca7-e71a7fdbf3c9"
       }
     }
   }
