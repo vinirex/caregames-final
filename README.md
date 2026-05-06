@@ -207,7 +207,12 @@ caregames-final/
 ⭐ Imagens das Telas
 <div align="center">
   <img src="https://github.com/user-attachments/assets/2cc39b73-f94d-4c28-899e-96e55a0fb71e" width="300" />
-  <img src="https://github.com/user-attachments/assets/88d188aa-20be-49a5-96de-db205f699005" width="300" />
+  <img width="300" height="1170" alt="home" src="https://github.com/user-attachments/assets/91edaa47-d846-4b59-b6a6-e37a79047d48" />
+<img width="300" height="1170" alt="IOT" src="https://github.com/user-attachments/assets/e53d48a5-43bc-4f0c-a335-4e4ab03162dd" />
+<img width="300" height="1170" alt="challenges" src="https://github.com/user-attachments/assets/d2f24550-b642-44db-8419-2b51d0556057" />
+<img width="300" height="2340" alt="logo" src="https://github.com/user-attachments/assets/2960d58d-c8ef-4847-97fa-462c341d5f04" />
+<img width="300" height="1170" alt="login" src="https://github.com/user-attachments/assets/41373d5b-e31a-487a-9dd0-37314348e845" />
+<img width="300" height="1170" alt="register" src="https://github.com/user-attachments/assets/fa3235f0-c5ce-4a1a-9165-ded0dd6698fa" />
   <img src="https://github.com/user-attachments/assets/3cd78d73-bb19-4420-b41a-aad395d7ad72" width="300" />
   <img src="https://github.com/user-attachments/assets/92355a6c-0bfb-4d5c-b2d2-986d9cc0aa61" width="300" />
   <img src="https://github.com/user-attachments/assets/431ab2a5-e166-4c74-a885-69c12fa00ede" width="300" />
