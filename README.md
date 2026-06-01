@@ -9,7 +9,7 @@
 * Vinicius Silva RM553240
 * Victor Didoff RM552965
 * Matheus Zottiz RM94119
-* Diogo Julio RM94119
+* Diogo Julio RM553837
 * Jonata Rafael RM552939
 ---
 
@@ -40,13 +40,13 @@ Siga as instruções para rodar o projeto localmente em modo de desenvolvimento.
 1. Clone o repositório:
 
 ```sh
-git clone <seu-repositorio>
+git clone <caregames-final>
 ```
 
 2. Acesse o diretório do projeto:
 
 ```sh
-cd my-expo-app
+cd care-games-final
 ```
 
 3. Instale as dependências:
