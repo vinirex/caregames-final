@@ -7,22 +7,17 @@ import { useAuth } from '../context/AuthContext';
 import { CustomButton } from '../components/CustomButton';
 import { api } from '../services/api';
 
+import { FormErrors } from '../types';
+
 export default function LoginScreen() {
   const router = useRouter();
-  const { login, userEmail, isLoading } = useAuth();
+  const { login, isLoading } = useAuth();
   const { theme, colors } = useTheme();
-
-  useEffect(() => {
-    if (!isLoading && userEmail) {
-      // Automatic redirection if the user is already logged in via AsyncStorage
-      router.replace('/home');
-    }
-  }, [userEmail, isLoading]);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [age, setAge] = useState('');
-  const [errors, setErrors] = useState<{ email?: string; password?: string; age?: string; api?: string }>({});
+  const [errors, setErrors] = useState<FormErrors>({});
 
   useEffect(() => {
     if (Object.keys(errors).length > 0) {
@@ -34,7 +29,7 @@ export default function LoginScreen() {
   }, [errors]);
 
   const validate = () => {
-    const newErrors: { email?: string; password?: string; age?: string; api?: string } = {};
+    const newErrors: FormErrors = {};
 
     // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -46,12 +41,6 @@ export default function LoginScreen() {
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/;
     if (!passwordRegex.test(password)) {
       newErrors.password = 'A senha deve ter pelo menos 8 caracteres, incluindo uma letra maiúscula, uma minúscula e um número.';
-    }
-
-    // Age validation
-    const parsedAge = parseInt(age, 10);
-    if (isNaN(parsedAge) || parsedAge < 18) {
-      newErrors.age = 'Você deve ter pelo menos 18 anos para entrar.';
     }
 
     setErrors(newErrors);
@@ -79,7 +68,7 @@ export default function LoginScreen() {
   }
 
   return (
-    <ImageBackground source={require('../assets/images/CarePlusDark.png')} style={{ flex: 1 }} resizeMode="cover">
+    <ImageBackground source={require('../assets/images/CarePlusDark.png')} style={{ flex: 1, width: '100%', height: '100%' }} resizeMode="cover">
       <View className={`flex-1 justify-end p-6 pb-24`}>
         <View className="mb-8">
           <Text className="text-4xl font-extrabold text-center text-white tracking-wide">Care Games +</Text>
@@ -116,14 +105,7 @@ export default function LoginScreen() {
         />
         {errors.password && <Text className="text-red-500 mb-4">{errors.password}</Text>}
 
-        <TextInput
-          className={`h-12 border rounded-lg px-4 mb-6 ${theme === 'dark' ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-300 text-black'}`}
-          placeholder="Idade"
-          placeholderTextColor={theme === 'dark' ? '#9ca3af' : '#6b7280'}
-          value={age}
-          onChangeText={setAge}
-          keyboardType="number-pad"
-        />
+        
         {errors.age && <Text className="text-red-500 mb-6">{errors.age}</Text>}
 
         <CustomButton title="Entrar" onPress={handleLogin} />

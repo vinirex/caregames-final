@@ -3,6 +3,8 @@ import { Link } from 'expo-router';
 import { Text, View, TouchableOpacity, ScrollView, Image, Alert } from "react-native";
 import { useTheme } from "../context/ThemeContext";
 import { usePoints } from "../context/PointsContext";
+import { useAuth } from "../context/AuthContext";
+import { api } from "../services/api";
 import { CustomButton } from '../components/CustomButton';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import * as ImagePicker from 'expo-image-picker';
@@ -18,6 +20,7 @@ interface Challenge {
 export default function ChallengesScreen() {
   const { theme, colors } = useTheme();
   const { addPoints } = usePoints();
+  const { userEmail } = useAuth();
   const [expandedChallenge, setExpandedChallenge] = useState<string | null>(null);
   const [activeChallenges, setActiveChallenges] = useState<Challenge[]>([]);
   const [challengePhotos, setChallengePhotos] = useState<{ [key: string]: string | null }>({});
@@ -36,14 +39,23 @@ export default function ChallengesScreen() {
   ];
 
   useEffect(() => {
-    setActiveChallenges(allChallenges);
-  }, []);
+    const loadChallenges = async () => {
+      if (userEmail) {
+        const response = await api.getCompletedChallenges(userEmail);
+        const completedIds = response.completedChallenges || [];
+        setActiveChallenges(allChallenges.filter(c => !completedIds.includes(c.id)));
+      } else {
+        setActiveChallenges(allChallenges);
+      }
+    };
+    loadChallenges();
+  }, [userEmail]);
 
   const toggleDescription = (challengeId: string) => {
     setExpandedChallenge(expandedChallenge === challengeId ? null : challengeId);
   };
 
-  const completeChallenge = (challenge: Challenge) => {
+  const completeChallenge = async (challenge: Challenge) => {
     if (challenge.requiresPhoto && !challengePhotos[challenge.id]) {
       Alert.alert('Foto Necessária', 'Este desafio requer uma foto como comprovação!');
       return;
@@ -52,6 +64,10 @@ export default function ChallengesScreen() {
     addPoints(challenge.points);
     setActiveChallenges(prevChallenges => prevChallenges.filter(c => c.id !== challenge.id));
     setExpandedChallenge(null);
+
+    if (userEmail) {
+      await api.completeChallenge(userEmail, challenge.id);
+    }
   };
 
   const pickImage = async (challengeId: string) => {

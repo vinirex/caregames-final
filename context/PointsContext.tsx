@@ -1,4 +1,6 @@
-import React, { createContext, useState, useContext, ReactNode, useCallback, useMemo } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useCallback, useMemo, useEffect } from 'react';
+import { useAuth } from './AuthContext';
+import { api } from '../services/api';
 
 interface PointsContextData {
   points: number;
@@ -10,14 +12,35 @@ const PointsContext = createContext<PointsContextData | undefined>(undefined);
 
 export const PointsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [points, setPoints] = useState(0);
+  const { userEmail } = useAuth();
 
-  const addPoints = useCallback((amount: number) => {
-    setPoints(prevPoints => prevPoints + amount);
-  }, []);
+  useEffect(() => {
+    const loadPoints = async () => {
+      if (userEmail) {
+        const response = await api.getPoints(userEmail);
+        if (response.success && response.points !== undefined) {
+          setPoints(response.points);
+        }
+      }
+    };
+    loadPoints();
+  }, [userEmail]);
 
-  const spendPoints = useCallback((amount: number) => {
-    setPoints(prevPoints => Math.max(0, prevPoints - amount));
-  }, []);
+  const addPoints = useCallback(async (amount: number) => {
+    setPoints(prev => {
+      const newPoints = prev + amount;
+      if (userEmail) api.updatePoints(userEmail, newPoints);
+      return newPoints;
+    });
+  }, [userEmail]);
+
+  const spendPoints = useCallback(async (amount: number) => {
+    setPoints(prev => {
+      const newPoints = Math.max(0, prev - amount);
+      if (userEmail) api.updatePoints(userEmail, newPoints);
+      return newPoints;
+    });
+  }, [userEmail]);
 
   const value = useMemo(
     () => ({ points, addPoints, spendPoints }),

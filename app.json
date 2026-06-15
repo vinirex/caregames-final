@@ -12,7 +12,8 @@
       "tsconfigPaths": true
     },
     "plugins": [
-      "expo-video"
+      "expo-video",
+      "expo-status-bar"
     ],
     "orientation": "portrait",
     "icon": "./assets/icon.png",

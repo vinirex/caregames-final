@@ -27,7 +27,7 @@ type Listener = (data: IoTData) => void;
 class IoTService {
   private ws: WebSocket | null = null;
   private listeners: Listener[] = [];
-  private simulationInterval: NodeJS.Timeout | null = null;
+  private simulationInterval: ReturnType<typeof setInterval> | null = null;
   private isConnected: boolean = false;
 
   public connect() {

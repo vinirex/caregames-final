@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Text, View, Image, TextInput, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { Text, View, Image, TextInput, ScrollView, TouchableOpacity, Alert, useWindowDimensions } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { Link, useRouter } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
@@ -30,36 +30,67 @@ export default function ProfileScreen() {
   const { userEmail, logout } = useAuth();
   const { theme, colors } = useTheme();
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  
+  // Calculate responsive profile photo size (20% of screen width, max 120)
+  const photoSize = Math.min(width * 0.2, 120);
+  const borderRadius = photoSize / 2;
+  
   // In a real app, this data would come from your auth context or API
-  const [name, setName] = useState('Nome do Usuário');
-  const [birthday, setBirthday] = useState('Aniversário');
-  const [address, setAddress] = useState('Endereço');
+  const [name, setName] = useState('');
+  const [birthday, setBirthday] = useState('');
+  const [address, setAddress] = useState('');
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
 
-  // Load saved profile photo on mount
+  // Load saved profile data on mount
   useEffect(() => {
-    const loadProfilePhoto = async () => {
+    const loadProfileData = async () => {
       try {
-        // First try local AsyncStorage for instant display
+        // Load photo from local storage for instant display
         const key = userEmail ? `@profile_photo_${userEmail}` : '@profile_photo_default';
         const savedPhoto = await AsyncStorage.getItem(key);
-        if (savedPhoto) {
-          setProfilePhoto(savedPhoto);
-        }
+        if (savedPhoto) setProfilePhoto(savedPhoto);
 
-        // Also fetch from API (simulated DB)
         if (userEmail) {
-          const response = await api.getProfilePhoto(userEmail);
-          if (response.success && response.photoUri) {
-            setProfilePhoto(response.photoUri);
+          // Fetch photo
+          const photoResponse = await api.getProfilePhoto(userEmail);
+          if (photoResponse.success && photoResponse.photoUri) {
+            setProfilePhoto(photoResponse.photoUri);
+          }
+
+          // Fetch profile info
+          const profileResponse = await api.getProfile(userEmail);
+          if (profileResponse.success && profileResponse.profile) {
+            if (profileResponse.profile.name) setName(profileResponse.profile.name);
+            if (profileResponse.profile.birthday) setBirthday(profileResponse.profile.birthday);
+            if (profileResponse.profile.address) setAddress(profileResponse.profile.address);
           }
         }
       } catch (error) {
-        console.error('Erro ao carregar foto de perfil:', error);
+        console.error('Erro ao carregar dados do perfil:', error);
+      } finally {
+        setIsLoaded(true);
       }
     };
-    loadProfilePhoto();
+    loadProfileData();
   }, [userEmail]);
+
+  // Auto-save profile data when it changes
+  useEffect(() => {
+    if (!isLoaded || !userEmail) return;
+
+    const saveProfile = async () => {
+      try {
+        await api.updateProfile(userEmail, { name, birthday, address });
+      } catch (error) {
+        console.error('Erro ao salvar perfil:', error);
+      }
+    };
+
+    const timer = setTimeout(saveProfile, 1000); // 1s debounce
+    return () => clearTimeout(timer);
+  }, [name, birthday, address, isLoaded, userEmail]);
 
   const pickProfilePhoto = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -126,28 +157,30 @@ export default function ProfileScreen() {
             <FontAwesome name="sign-out" size={28} color="#ef4444" />
           </TouchableOpacity>
         </View>
-        <View className="flex-row items-center mb-6">
+        <View className="flex-row items-center mb-6 flex-wrap">
           <TouchableOpacity onPress={pickProfilePhoto} activeOpacity={0.7}>
             {profilePhoto ? (
               <Image
                 source={{ uri: profilePhoto }}
-                style={{ width: 96, height: 96, borderRadius: 48 }}
+                style={{ width: photoSize, height: photoSize, borderRadius }}
                 className="mr-6"
               />
             ) : (
-              <Image
-                source={require('../../assets/images/profile-placeholder.png')}
-                className="w-24 h-24 rounded-full mr-6"
-              />
+              <View
+                style={{ width: photoSize, height: photoSize, borderRadius }}
+                className={`mr-6 items-center justify-center ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-200'}`}
+              >
+                <FontAwesome name="user" size={photoSize * 0.5} color={colors.primary} />
+              </View>
             )}
             <View
-              className="absolute bottom-0 right-4 rounded-full p-1.5"
+              className="absolute bottom-0 right-4 rounded-full p-2"
               style={{ backgroundColor: colors.primary }}
             >
-              <FontAwesome name="camera" size={14} color="white" />
+              <FontAwesome name="camera" size={photoSize * 0.3} color="white" />
             </View>
           </TouchableOpacity>
-          <View>
+          <View className="flex-1 min-w-0">
             <Text className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-black'}`}>{name || 'Nome do Usuário'}</Text>
             <Text className={`text-md mt-1 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>{userEmail || 'user@example.com'}</Text>
             <TouchableOpacity onPress={pickProfilePhoto}>
@@ -181,4 +214,4 @@ export default function ProfileScreen() {
       </View>
     </ScrollView>
   );
-}
+}

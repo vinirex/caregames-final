@@ -5,6 +5,7 @@ import '../global.css';
 import { useTheme } from '../context/ThemeContext';
 import { CustomButton } from '../components/CustomButton';
 import { api } from '../services/api';
+import { FormErrors } from '../types';
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -13,10 +14,10 @@ export default function RegisterScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [age, setAge] = useState('');
-  const [errors, setErrors] = useState<{ email?: string; password?: string; age?: string }>({});
+  const [errors, setErrors] = useState<FormErrors>({});
 
   const validate = () => {
-    const newErrors: { email?: string; password?: string; age?: string } = {};
+    const newErrors: FormErrors = {};
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
@@ -50,7 +51,7 @@ export default function RegisterScreen() {
   };
 
   return (
-    <ImageBackground source={require('../assets/images/CarePlusDark.png')} style={{ flex: 1, justifyContent: 'center' }} resizeMode="cover">
+    <ImageBackground source={require('../assets/images/CarePlusDark.png')} style={{ flex: 1, width: '100%', height: '100%', justifyContent: 'center' }} resizeMode="cover">
       <View className={`flex-1 justify-center p-6`}>
         <Text className={`text-3xl font-bold text-center mb-8 text-white`}>Criar Conta</Text>
         <Link href="/" className="mb-6">
