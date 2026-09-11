@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useRouter } from 'expo-router';
-import { Text, View, TextInput, Alert, ImageBackground, ActivityIndicator } from 'react-native';
+import { Text, View, TextInput, ActivityIndicator, Image, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import '../global.css';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -9,15 +9,24 @@ import { api } from '../services/api';
 
 import { FormErrors } from '../types';
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 export default function LoginScreen() {
+  const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { login, isLoading } = useAuth();
+  const { login, userEmail, isLoading } = useAuth();
   const { theme, colors } = useTheme();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [age, setAge] = useState('');
   const [errors, setErrors] = useState<FormErrors>({});
+
+  useEffect(() => {
+    if (!isLoading && userEmail) {
+      router.replace('/home');
+    }
+  }, [userEmail, isLoading]);
 
   useEffect(() => {
     if (Object.keys(errors).length > 0) {
@@ -52,7 +61,7 @@ export default function LoginScreen() {
       const response = await api.login(email, password);
       if (response.success) {
         await login(email);
-        router.push('/home');
+        router.replace('/home');
       } else {
         setErrors(prev => ({ ...prev, api: response.message }));
       }
@@ -68,54 +77,77 @@ export default function LoginScreen() {
   }
 
   return (
-    <ImageBackground source={require('../assets/images/CarePlusDark.png')} style={{ flex: 1, width: '100%', height: '100%' }} resizeMode="cover">
-      <View className={`flex-1 justify-end p-6 pb-24`}>
-        <View className="mb-8">
-          <Text className="text-4xl font-extrabold text-center text-white tracking-wide">Care Games +</Text>
-          <Text className="text-2xl font-medium text-center text-blue-400 mt-1">Login</Text>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
+    >
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{
+          flexGrow: 1,
+          justifyContent: 'center',
+          paddingTop: Math.max(insets.top, 24),
+          paddingBottom: Math.max(insets.bottom, 24),
+        }}
+        keyboardShouldPersistTaps="handled"
+        className="p-6 bg-slate-950"
+      >
+        <View className="mb-8 items-center">
+          <View style={{ width: 56, height: 56 }} className="rounded-2xl bg-cyan-500/10 border border-cyan-500/30 items-center justify-center mb-3 shadow-lg">
+            <Image 
+              source={require('../assets/icon.png')} 
+              style={{ width: 44, height: 44 }}
+              resizeMode="contain" 
+            />
+          </View>
+          <Text className="text-4xl font-extrabold text-center text-white tracking-wide font-display">Care Games +</Text>
+          <Text className="text-lg font-semibold text-center text-cyan-400 mt-1 font-sans">Portal de Saúde e Bem-estar</Text>
         </View>
+
         <Link href="/register" className="mb-6">
-          <Text className={`text-center ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}>Não tem uma conta? Cadastre-se</Text>
+          <Text className="text-center text-cyan-400 font-sans font-medium">Não tem uma conta? <Text className="underline font-bold">Cadastre-se</Text></Text>
         </Link>
 
         {errors.api && (
-          <Text className="text-red-500 font-bold text-center mb-4 bg-red-100/10 p-2 rounded">
+          <Text className="text-red-400 font-bold text-center mb-4 bg-red-500/10 border border-red-500/30 p-3 rounded-xl font-sans">
             {errors.api}
           </Text>
         )}
 
-        <TextInput
-          className={`h-12 border rounded-lg px-4 mb-4 ${theme === 'dark' ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-300 text-black'}`}
-          placeholder="E-mail"
-          placeholderTextColor={theme === 'dark' ? '#9ca3af' : '#6b7280'}
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-        />
-        {errors.email && <Text className="text-red-500 mb-4">{errors.email}</Text>}
+        <View className="space-y-4 mb-2">
+          <TextInput
+            className="h-14 border rounded-xl px-4 bg-slate-900 border-slate-800 text-white font-sans text-base"
+            placeholder="E-mail"
+            placeholderTextColor="#94A3B8"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+          {errors.email && <Text className="text-red-400 text-xs ml-1 font-sans">{errors.email}</Text>}
 
-        <TextInput
-          className={`h-12 border rounded-lg px-4 mb-4 ${theme === 'dark' ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-300 text-black'}`}
-          placeholder="Senha"
-          placeholderTextColor={theme === 'dark' ? '#9ca3af' : '#6b7280'}
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-        />
-        {errors.password && <Text className="text-red-500 mb-4">{errors.password}</Text>}
-
-        
-        {errors.age && <Text className="text-red-500 mb-6">{errors.age}</Text>}
-
-        <CustomButton title="Entrar" onPress={handleLogin} />
-        
-        <View className="mt-8 bg-gray-900/60 p-4 rounded-xl border border-gray-700/50">
-          <Text className="text-gray-300 text-center text-xs mb-1">Para testar sem conexão ao banco, use:</Text>
-          <Text className="text-white text-center text-sm font-bold">E-mail: test@test.com</Text>
-          <Text className="text-white text-center text-sm font-bold">Senha: Test1234</Text>
+          <TextInput
+            className="h-14 border rounded-xl px-4 bg-slate-900 border-slate-800 text-white font-sans text-base mt-3"
+            placeholder="Senha"
+            placeholderTextColor="#94A3B8"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+          />
+          {errors.password && <Text className="text-red-400 text-xs ml-1 font-sans">{errors.password}</Text>}
         </View>
-      </View>
-    </ImageBackground>
+
+        <View className="mt-4">
+          <CustomButton title="Entrar" onPress={handleLogin} />
+        </View>
+
+        <View className="mt-6 bg-slate-900 p-4 rounded-xl border border-slate-800">
+          <Text className="text-slate-400 text-center text-xs mb-1 font-sans">Para testar sem conexão ao banco, use:</Text>
+          <Text className="text-cyan-400 text-center text-sm font-mono font-bold">test@test.com</Text>
+          <Text className="text-slate-200 text-center text-xs font-mono">Senha: Test1234</Text>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }

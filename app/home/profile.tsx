@@ -26,12 +26,17 @@ const EditableField = ({ label, value, onChangeText, placeholder, keyboardType =
   );
 };
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNotifications } from '../../context/NotificationContext';
+
 export default function ProfileScreen() {
+  const insets = useSafeAreaInsets();
   const { userEmail, logout } = useAuth();
   const { theme, colors } = useTheme();
+  const { addNotification } = useNotifications();
   const router = useRouter();
   const { width } = useWindowDimensions();
-  
+
   // Calculate responsive profile photo size (20% of screen width, max 120)
   const photoSize = Math.min(width * 0.2, 120);
   const borderRadius = photoSize / 2;
@@ -120,7 +125,7 @@ export default function ProfileScreen() {
         if (userEmail) {
           const response = await api.uploadProfilePhoto(userEmail, photoUri);
           if (response.success) {
-            Alert.alert('Sucesso', 'Foto de perfil atualizada com sucesso!');
+            addNotification('Foto de Perfil Atualizada 📸', 'Sua foto de perfil foi alterada com sucesso!', 'photo-camera', '#00E5FF');
           } else {
             Alert.alert('Aviso', 'Foto salva localmente, mas houve um erro ao enviar para o servidor.');
           }
@@ -133,12 +138,20 @@ export default function ProfileScreen() {
   };
 
   return (
-    <ScrollView className={`flex-1 ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'}`}>
+    <ScrollView 
+      contentContainerStyle={{ paddingTop: Math.max(insets.top, 20), paddingBottom: Math.max(insets.bottom, 40) }}
+      className={`flex-1 ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'}`}
+    >
       <View className="p-6">
         <View className="justify-between mb-8 flex-row items-center">
-          <Text className={`text-4xl font-bold ${theme === 'dark' ? 'text-white' : 'text-black'}`}>
-            Perfil
-          </Text>
+          <View className="flex-row items-center gap-3">
+            <TouchableOpacity onPress={() => router.push('/home')} activeOpacity={0.7} className="p-1">
+              <FontAwesome name="arrow-left" size={24} color={theme === 'dark' ? '#00E5FF' : '#0284C7'} />
+            </TouchableOpacity>
+            <Text className={`text-3xl font-bold ${theme === 'dark' ? 'text-white' : 'text-black'}`}>
+              Perfil
+            </Text>
+          </View>
           <TouchableOpacity
             onPress={() => {
               Alert.alert('Sair', 'Deseja realmente sair da conta?', [
@@ -147,14 +160,17 @@ export default function ProfileScreen() {
                   text: 'Sair',
                   style: 'destructive',
                   onPress: async () => {
-                    await logout();
-                    router.replace('/');
+                    try {
+                      await logout();
+                    } catch (e) {
+                      console.error('Logout error:', e);
+                    }
                   },
                 },
               ]);
             }}
           >
-            <FontAwesome name="sign-out" size={28} color="#ef4444" />
+            <FontAwesome name="sign-out" size={26} color="#ef4444" />
           </TouchableOpacity>
         </View>
         <View className="flex-row items-center mb-6 flex-wrap">
