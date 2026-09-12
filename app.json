@@ -8,6 +8,7 @@
       "expo-font",
       "expo-video",
       "expo-status-bar",
+      "expo-system-ui",
       [
         "expo-splash-screen",
         {
