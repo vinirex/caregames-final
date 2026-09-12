@@ -47,7 +47,6 @@
     "@babel/core": "^7.29.0",
     "@types/react": "~19.2.14",
     "autoprefixer": "^10.4.22",
-    "eas-cli": "^0.0.0",
     "eslint": "^9.25.1",
     "eslint-config-expo": "~57.0.2",
     "eslint-config-prettier": "^10.1.2",

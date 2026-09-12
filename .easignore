@@ -9,3 +9,5 @@ npm-debug.*
 *.mobileprovision
 *.orig.*
 eas.json
+android
+ios

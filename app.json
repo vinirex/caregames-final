@@ -12,21 +12,7 @@
       "tsconfigPaths": true
     },
     "plugins": [
-      [
-        "expo-font",
-        {
-          "fonts": [
-            "./assets/fonts/Sora-Regular.ttf",
-            "./assets/fonts/Sora-SemiBold.ttf",
-            "./assets/fonts/Sora-Bold.ttf",
-            "./assets/fonts/Sora-ExtraBold.ttf",
-            "./assets/fonts/HankenGrotesk-Regular.ttf",
-            "./assets/fonts/HankenGrotesk-SemiBold.ttf",
-            "./assets/fonts/JetBrainsMono-Regular.ttf",
-            "./assets/fonts/JetBrainsMono-Bold.ttf"
-          ]
-        }
-      ],
+      "expo-font",
       "expo-video",
       "expo-status-bar",
       "expo-splash-screen",
@@ -36,7 +22,8 @@
           "android": {
             "minSdkVersion": 26,
             "compileSdkVersion": 34,
-            "targetSdkVersion": 34
+            "targetSdkVersion": 34,
+            "newArchEnabled": false
           }
         }
       ],
@@ -46,7 +33,6 @@
           "rationaleActivity": ".MainActivity"
         }
       ],
-      "@kingstinct/react-native-healthkit",
       "expo-router"
     ],
     "orientation": "portrait",
