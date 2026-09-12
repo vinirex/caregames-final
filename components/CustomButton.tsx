@@ -51,6 +51,7 @@ export const CustomButton: React.FC<CustomButtonProps> = ({
           paddingVertical: 14,
           paddingHorizontal: 22,
           borderRadius: 12,
+          flexDirection: "row",
           alignItems: "center",
           justifyContent: "center",
           borderWidth: variant === "outline" ? 1.5 : 0,
@@ -69,6 +70,8 @@ export const CustomButton: React.FC<CustomButtonProps> = ({
               color: textColor,
               fontSize: 16,
               fontWeight: "600",
+              includeFontPadding: false,
+              textAlignVertical: "center",
             },
             textStyle,
           ]}

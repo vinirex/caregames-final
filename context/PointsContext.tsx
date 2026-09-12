@@ -4,47 +4,52 @@ import { api } from '../services/api';
 
 interface PointsContextData {
   points: number;
-  addPoints: (amount: number) => void;
-  spendPoints: (amount: number) => void;
+  addPoints: (amount: number) => Promise<void>;
+  spendPoints: (amount: number) => Promise<void>;
+  refreshPoints: () => Promise<void>;
 }
 
 const PointsContext = createContext<PointsContextData | undefined>(undefined);
 
 export const PointsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [points, setPoints] = useState(0);
+  const [points, setPoints] = useState(1250);
   const { userEmail } = useAuth();
+  const activeEmail = userEmail || 'test@test.com';
+
+  const loadPoints = useCallback(async () => {
+    try {
+      const response = await api.getPoints(activeEmail);
+      if (response.success && response.points !== undefined) {
+        setPoints(response.points);
+      }
+    } catch (e) {
+      console.error('Failed to load points:', e);
+    }
+  }, [activeEmail]);
 
   useEffect(() => {
-    const loadPoints = async () => {
-      if (userEmail) {
-        const response = await api.getPoints(userEmail);
-        if (response.success && response.points !== undefined) {
-          setPoints(response.points);
-        }
-      }
-    };
     loadPoints();
-  }, [userEmail]);
+  }, [loadPoints]);
 
   const addPoints = useCallback(async (amount: number) => {
     setPoints(prev => {
       const newPoints = prev + amount;
-      if (userEmail) api.updatePoints(userEmail, newPoints);
+      api.updatePoints(activeEmail, newPoints);
       return newPoints;
     });
-  }, [userEmail]);
+  }, [activeEmail]);
 
   const spendPoints = useCallback(async (amount: number) => {
     setPoints(prev => {
       const newPoints = Math.max(0, prev - amount);
-      if (userEmail) api.updatePoints(userEmail, newPoints);
+      api.updatePoints(activeEmail, newPoints);
       return newPoints;
     });
-  }, [userEmail]);
+  }, [activeEmail]);
 
   const value = useMemo(
-    () => ({ points, addPoints, spendPoints }),
-    [points, addPoints, spendPoints]
+    () => ({ points, addPoints, spendPoints, refreshPoints: loadPoints }),
+    [points, addPoints, spendPoints, loadPoints]
   );
 
   return (

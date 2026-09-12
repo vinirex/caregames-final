@@ -42,10 +42,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const logout = useCallback(async () => {
     try {
-      await AsyncStorage.removeItem('@user_email');
+      await AsyncStorage.clear();
       setUserEmail(null);
     } catch (error) {
-      console.error('Failed to clear session:', error);
+      console.error('Failed to clear cache on logout:', error);
     }
   }, []);
 

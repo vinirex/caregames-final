@@ -12,8 +12,28 @@
       "tsconfigPaths": true
     },
     "plugins": [
+      "expo-font",
       "expo-video",
-      "expo-status-bar"
+      "expo-status-bar",
+      "expo-splash-screen",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 26,
+            "compileSdkVersion": 34,
+            "targetSdkVersion": 34,
+            "newArchEnabled": false
+          }
+        }
+      ],
+      [
+        "react-native-health-connect",
+        {
+          "rationaleActivity": ".MainActivity"
+        }
+      ],
+      "expo-router"
     ],
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -27,14 +47,25 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.vinicius.caregames",
+      "entitlements": {
+        "com.apple.developer.healthkit": true
+      },
+      "infoPlist": {
+        "NSHealthShareUsageDescription": "Care Games + precisa de acesso aos seus passos e frequência cardíaca para sincronizar os dados de saúde com seus desafios e recompensas."
+      }
     },
     "android": {
       "package": "com.vinicius.caregames",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0a1929"
-      }
+      },
+      "permissions": [
+        "android.permission.health.READ_STEPS",
+        "android.permission.health.READ_HEART_RATE"
+      ]
     },
     "extra": {
       "eas": {

@@ -1,9 +1,11 @@
 import React from 'react';
-import { Link } from 'expo-router';
-import { Text, View, ScrollView, Image, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, ScrollView, Image, TouchableOpacity, Alert } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { usePoints } from '../context/PointsContext';
-import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
+import { TopAppBar } from '../components/TopAppBar';
+import { BottomNav } from '../components/BottomNav';
+import { MaterialIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 interface Benefit {
   id: string;
@@ -37,7 +39,7 @@ const benefitsData: Benefit[] = [
   },
   {
     id: '4',
-    title: 'Consulta com Nutricionista',
+    title: 'Consulta Nutricionista',
     description: 'Uma consulta online para montar seu plano alimentar.',
     points: 4000,
     image: 'https://picsum.photos/seed/nutrition/200',
@@ -51,49 +53,113 @@ const benefitsData: Benefit[] = [
   },
 ];
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNotifications } from '../context/NotificationContext';
+
 export default function BenefitsScreen() {
-  const { theme, colors } = useTheme();
+  const insets = useSafeAreaInsets();
+  const { theme } = useTheme();
   const { points, spendPoints } = usePoints();
+  const { addNotification } = useNotifications();
 
   const handleRedeem = (benefit: Benefit) => {
     if (points >= benefit.points) {
       spendPoints(benefit.points);
-      Alert.alert('Benefício Resgatado!', `Você resgatou "${benefit.title}" com sucesso.`);
+      addNotification(
+        'Benefício Resgatado! 🎁',
+        `Você resgatou "${benefit.title}" por ${benefit.points} PTS com sucesso!`,
+        'card-giftcard',
+        '#10B981'
+      );
     } else {
       Alert.alert('Pontos Insuficientes', `Você não tem pontos suficientes para resgatar "${benefit.title}".`);
     }
   };
 
   return (
-    <ScrollView
-      className={`flex-1 ${theme === 'dark' ? 'bg-gray-900' : 'bg-white'}`}
-      contentContainerStyle={{ padding: 24, paddingTop: 48 }}
-    >
-      <View className="justify-between mb-8 flex-row items-center">
-        <Text className={`text-4xl font-bold ${theme === 'dark' ? 'text-white' : 'text-black'}`}>
-          Benefícios
-        </Text>
-        <Link href="/home">
-          <FontAwesome6 name="house-chimney" size={32} color={colors.primary} />
-        </Link>
-      </View>
+    <View className={`flex-1 ${theme === 'dark' ? 'bg-background' : 'bg-slate-100'}`}>
+      <TopAppBar showMenu={true} title="Care Games +" />
 
-      {benefitsData.map((benefit) => (
-        <View key={benefit.id} className={`flex-row items-center p-4 rounded-2xl shadow-lg shadow-black/40 mb-4 ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100'}`}>
-          <Image source={{ uri: benefit.image }} className="w-20 h-20 rounded-lg mr-4" />
-          <View className="flex-1">
-            <Text className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-black'}`}>{benefit.title}</Text>
-            <Text className={`mt-1 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>{benefit.description}</Text>
-            <Text className={`mt-2 font-bold ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}>{benefit.points} pts</Text>
+      <ScrollView 
+        contentContainerStyle={{ paddingBottom: 110 + insets.bottom, paddingTop: 24 }}
+        className="flex-1 px-5"
+      >
+        <View className="mb-6 flex-row justify-between items-start">
+          <View className="flex-col">
+            <Text className={`font-sora text-3xl font-bold tracking-tight mb-1 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+              Benefícios
+            </Text>
+            <Text className={`font-hanken text-base ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
+              Resgate seus pontos por recompensas exclusivas.
+            </Text>
           </View>
-          <TouchableOpacity
-            onPress={() => handleRedeem(benefit)}
-            className="ml-4 bg-blue-600 p-3 rounded-lg"
-          >
-            <Text className="text-white font-bold">Resgatar</Text>
-          </TouchableOpacity>
+          <View className={`flex-row items-center gap-1.5 px-3 py-2 rounded-xl border ${
+            theme === 'dark' ? 'bg-amber-500/10 border-amber-500/30' : 'bg-amber-100 border-amber-300'
+          }`}>
+            <MaterialIcons name="stars" size={18} color={theme === 'dark' ? '#FBBF24' : '#D97706'} />
+            <Text className={`font-jetbrains text-sm uppercase font-bold ${theme === 'dark' ? 'text-amber-400' : 'text-amber-800'}`}>
+              {points} PTS
+            </Text>
+          </View>
         </View>
-      ))}
-    </ScrollView>
+
+        <View className="flex-col gap-4">
+          {benefitsData.map((benefit) => (
+            <View key={benefit.id} className={`rounded-2xl p-5 border flex-col gap-4 ${
+              theme === 'dark' ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200 shadow-sm'
+            }`}>
+              <View className="flex-row items-center gap-4">
+                <Image source={{ uri: benefit.image }} className="w-16 h-16 rounded-xl bg-slate-200 dark:bg-slate-800" />
+                <View className="flex-1">
+                  <Text className={`font-sora font-bold text-lg mb-1 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                    {benefit.title}
+                  </Text>
+                  <Text className={`font-hanken text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`} numberOfLines={2}>
+                    {benefit.description}
+                  </Text>
+                </View>
+              </View>
+
+              <View className="flex-row items-center justify-between mt-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                <Text className={`font-jetbrains text-base uppercase font-bold ${
+                  theme === 'dark' ? 'text-cyan-400' : 'text-cyan-700'
+                }`}>
+                  {benefit.points} PTS
+                </Text>
+                
+                <TouchableOpacity 
+                  onPress={() => handleRedeem(benefit)}
+                  style={{ borderRadius: 12, overflow: 'hidden' }}
+                  className={`flex-row items-center justify-center ${points >= benefit.points ? 'shadow-sm' : 'opacity-50'}`}
+                  disabled={points < benefit.points}
+                  activeOpacity={0.85}
+                >
+                  <LinearGradient
+                    colors={points >= benefit.points ? 
+                      (theme === 'dark' ? ['#00E5FF', '#0284C7'] : ['#0284C7', '#0369A1']) : 
+                      ['#64748B', '#475569']
+                    }
+                    start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                    style={{ borderRadius: 12 }}
+                    className="px-5 py-2.5 flex-row items-center justify-center gap-2 rounded-xl"
+                  >
+                    <MaterialIcons name="redeem" size={16} color="#ffffff" />
+                    <Text 
+                      numberOfLines={1}
+                      style={{ includeFontPadding: false, textAlignVertical: 'center' }}
+                      className="font-jetbrains text-xs font-bold uppercase text-white tracking-wide"
+                    >
+                      Resgatar
+                    </Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ))}
+        </View>
+      </ScrollView>
+
+      <BottomNav />
+    </View>
   );
 }

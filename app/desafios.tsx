@@ -1,174 +1,248 @@
-import React, { useState, useEffect } from "react";
-import { Link } from 'expo-router';
-import { Text, View, TouchableOpacity, ScrollView, Image, Alert } from "react-native";
-import { useTheme } from "../context/ThemeContext";
-import { usePoints } from "../context/PointsContext";
-import { useAuth } from "../context/AuthContext";
-import { api } from "../services/api";
-import { CustomButton } from '../components/CustomButton';
-import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
-import * as ImagePicker from 'expo-image-picker';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { useTheme } from '../context/ThemeContext';
+import { usePoints } from '../context/PointsContext';
+import { useAuth } from '../context/AuthContext';
+import { TopAppBar } from '../components/TopAppBar';
+import { BottomNav } from '../components/BottomNav';
+import { MaterialIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { api } from '../services/api';
 
 interface Challenge {
   id: string;
   title: string;
-  points: number;
   description: string;
-  requiresPhoto?: boolean;
+  points: number;
+  icon: keyof typeof MaterialIcons.glyphMap;
+  progressText: string;
+  targetText: string;
+  progressPercent: number;
 }
 
-export default function ChallengesScreen() {
-  const { theme, colors } = useTheme();
-  const { addPoints } = usePoints();
-  const { userEmail } = useAuth();
-  const [expandedChallenge, setExpandedChallenge] = useState<string | null>(null);
-  const [activeChallenges, setActiveChallenges] = useState<Challenge[]>([]);
-  const [challengePhotos, setChallengePhotos] = useState<{ [key: string]: string | null }>({});
+const CHALLENGES: Challenge[] = [
+  {
+    id: 'steps_10k',
+    title: '10.000 passos por dia',
+    description: 'Mantenha-se em movimento! Alcance sua meta diária de passos para manter sua sequência e melhorar a saúde cardiovascular.',
+    points: 100,
+    icon: 'directions-walk',
+    progressText: '6.500',
+    targetText: '10.000',
+    progressPercent: 65,
+  },
+  {
+    id: 'water_2l',
+    title: 'Beber 2L de Água',
+    description: 'Mantenha-se hidratado ao longo do dia. Registre seu consumo diário para atingir sua meta.',
+    points: 50,
+    icon: 'water-drop',
+    progressText: '1,5L',
+    targetText: '2,0L',
+    progressPercent: 75,
+  },
+  {
+    id: 'meditation_15m',
+    title: '15 min de Meditação',
+    description: 'Concentre sua mente e reduza o estresse com uma sessão diária de meditação guiada.',
+    points: 75,
+    icon: 'self-improvement',
+    progressText: '10 min',
+    targetText: '15 min',
+    progressPercent: 66,
+  },
+];
 
-  const allChallenges: Challenge[] = [
-    { id: '1', title: '1000 passos por dia', points: 100, description: 'Caminhe pelo menos 1000 passos todos os dias para melhorar sua saúde cardiovascular.' },
-    { id: '2', title: 'Beber 2L de água', points: 50, description: 'Mantenha-se hidratado bebendo pelo menos 2 litros de água diariamente.', requiresPhoto: true },
-    { id: '3', title: '5 minutos de meditação', points: 75, description: 'Dedique 5 minutos do seu dia para meditar e reduzir o estresse.' },
-    { id: '4', title: 'Comer uma fruta por dia', points: 30, description: 'Adicione uma porção de fruta à sua dieta diária para mais vitaminas.', requiresPhoto: true },
-    { id: '5', title: 'Alongamento matinal', points: 40, description: 'Comece o dia com 10 minutos de alongamento para flexibilidade.' },
-    { id: '6', title: 'Dormir 7-8 horas', points: 120, description: 'Garanta uma boa noite de sono, dormindo entre 7 e 8 horas.' },
-    { id: '7', title: 'Evitar açúcar refinado', points: 90, description: 'Desafie-se a passar um dia sem consumir açúcar refinado.' },
-    { id: '8', title: 'Subir escadas (5 andares)', points: 60, description: 'Troque o elevador pelas escadas e suba pelo menos 5 andares.' },
-    { id: '9', title: 'Ler por 15 minutos', points: 20, description: 'Estimule sua mente lendo um livro ou artigo por 15 minutos.' },
-    { id: '10', title: 'Preparar uma refeição saudável', points: 80, description: 'Cozinhe uma refeição nutritiva e balanceada em casa.', requiresPhoto: true },
-  ];
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNotifications } from '../context/NotificationContext';
+
+export default function DesafiosScreen() {
+  const insets = useSafeAreaInsets();
+  const { theme } = useTheme();
+  const { points, addPoints } = usePoints();
+  const { userEmail } = useAuth();
+  const { addNotification } = useNotifications();
+  const activeEmail = userEmail || 'test@test.com';
+
+  const [completedIds, setCompletedIds] = useState<string[]>([]);
 
   useEffect(() => {
-    const loadChallenges = async () => {
-      if (userEmail) {
-        const response = await api.getCompletedChallenges(userEmail);
-        const completedIds = response.completedChallenges || [];
-        setActiveChallenges(allChallenges.filter(c => !completedIds.includes(c.id)));
-      } else {
-        setActiveChallenges(allChallenges);
+    const fetchCompleted = async () => {
+      const res = await api.getCompletedChallenges(activeEmail);
+      if (res.success && res.completedChallenges) {
+        setCompletedIds(res.completedChallenges);
       }
     };
-    loadChallenges();
-  }, [userEmail]);
+    fetchCompleted();
+  }, [activeEmail]);
 
-  const toggleDescription = (challengeId: string) => {
-    setExpandedChallenge(expandedChallenge === challengeId ? null : challengeId);
-  };
-
-  const completeChallenge = async (challenge: Challenge) => {
-    if (challenge.requiresPhoto && !challengePhotos[challenge.id]) {
-      Alert.alert('Foto Necessária', 'Este desafio requer uma foto como comprovação!');
+  const handleComplete = async (challenge: Challenge) => {
+    if (completedIds.includes(challenge.id)) {
+      Alert.alert('Desafio já concluído', 'Você já recebeu os pontos deste desafio.');
       return;
     }
 
-    addPoints(challenge.points);
-    setActiveChallenges(prevChallenges => prevChallenges.filter(c => c.id !== challenge.id));
-    setExpandedChallenge(null);
-
-    if (userEmail) {
-      await api.completeChallenge(userEmail, challenge.id);
-    }
-  };
-
-  const pickImage = async (challengeId: string) => {
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-    if (permissionResult.granted === false) {
-      Alert.alert('Permissão negada', 'Precisamos de permissão para acessar a galeria de fotos.');
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.5,
-    });
-
-    if (!result.canceled) {
-      setChallengePhotos(prev => ({ ...prev, [challengeId]: result.assets[0].uri }));
+    const res = await api.completeChallenge(activeEmail, challenge.id);
+    if (res.success) {
+      setCompletedIds(prev => [...prev, challenge.id]);
+      await addPoints(challenge.points);
+      addNotification(
+        'Desafio Concluído! 🎉',
+        `Parabéns! Você ganhou +${challenge.points} PTS por concluir "${challenge.title}".`,
+        'emoji-events',
+        '#FBBF24'
+      );
     }
   };
 
   return (
-    <ScrollView
-      className={`${theme === "dark" ? "bg-gray-900" : "bg-white"}`}
-      contentContainerStyle={{ padding: 24, paddingBottom: 60 }}
-    >
-      <View className="justify-between mb-8 mt-6 flex-row items-center p-4">
-        <Text
-          className={` text-4xl font-bold ${theme === "dark" ? "text-white" : "text-black"}`}
-        >
-          Desafios
-        </Text>
-        <Link href="/home">
-          <FontAwesome6 name="house-chimney" size={32} color={colors.primary} />
-        </Link>
-      </View>
+    <View className={`flex-1 ${theme === 'dark' ? 'bg-background' : 'bg-slate-100'}`}>
+      <TopAppBar showMenu={true} title="Care Games +" />
 
-      {activeChallenges.map((challenge) => (
-        <View key={challenge.id} className="mb-4">
-          <TouchableOpacity
-            className={`shadow-lg shadow-black/40 rounded-2xl p-4 w-full ${theme === "dark" ? "bg-gray-800" : "bg-gray-100"}`}
-            onPress={() => toggleDescription(challenge.id)}
-          >
-            <View className="flex-row justify-between items-center">
-              <View className="flex-1">
-                <Text
-                  className={`text-lg font-semibold ${theme === "dark" ? "text-white" : "text-black"}`}
-                >
-                  {challenge.title}
-                </Text>
-                <Text
-                  className={`text-md font-bold ${theme === "dark" ? "text-blue-400" : "text-blue-600"}`}
-                >
-                  {challenge.points} pts
-                </Text>
-              </View>
-              {challenge.requiresPhoto && (
-                <FontAwesome6 name="camera" size={20} color={colors.primary} />
-              )}
-            </View>
-            
-            {expandedChallenge === challenge.id && (
-              <View className="mt-4">
-                <Text
-                  className={`${theme === "dark" ? "text-gray-300" : "text-gray-600"} mb-4`}
-                >
-                  {challenge.description}
-                </Text>
+      <ScrollView 
+        contentContainerStyle={{ paddingBottom: 110 + insets.bottom, paddingTop: 24 }}
+        className="flex-1 px-5"
+      >
+        <View className="mb-6 flex-row justify-between items-start">
+          <View className="flex-col flex-1">
+            <Text className={`font-sora text-3xl font-bold tracking-tight mb-1 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+              Desafios Ativos
+            </Text>
+            <Text className={`font-hanken text-base ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
+              Conclua tarefas diárias para ganhar pontos e subir no ranking.
+            </Text>
+          </View>
+          
+          <View className={`flex-row items-center gap-1.5 px-3 py-2 rounded-xl border ${
+            theme === 'dark' ? 'bg-amber-500/10 border-amber-500/30' : 'bg-amber-100 border-amber-300'
+          }`}>
+            <MaterialIcons name="stars" size={18} color={theme === 'dark' ? '#FBBF24' : '#D97706'} />
+            <Text className={`font-jetbrains text-sm uppercase font-bold ${theme === 'dark' ? 'text-amber-400' : 'text-amber-800'}`}>
+              {points} PTS
+            </Text>
+          </View>
+        </View>
 
-                {challenge.requiresPhoto && (
-                  <View className="mb-4">
-                    {challengePhotos[challenge.id] ? (
-                      <View className="items-center mb-4">
-                        <Image 
-                          source={{ uri: challengePhotos[challenge.id] as string }} 
-                          style={{ width: '100%', height: 150, borderRadius: 10 }} 
-                        />
-                        <TouchableOpacity onPress={() => pickImage(challenge.id)} className="mt-2">
-                          <Text className={`${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}>Trocar Foto</Text>
-                        </TouchableOpacity>
-                      </View>
-                    ) : (
-                      <TouchableOpacity 
-                        onPress={() => pickImage(challenge.id)}
-                        className={`p-4 rounded-xl border border-dashed ${theme === 'dark' ? 'border-gray-500 bg-gray-700' : 'border-gray-400 bg-gray-200'} items-center`}
-                      >
-                        <FontAwesome6 name="camera" size={24} color={theme === 'dark' ? '#9ca3af' : '#6b7280'} />
-                        <Text className={`mt-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>Enviar Foto Comprovação</Text>
-                      </TouchableOpacity>
-                    )}
+        <View className="flex-col gap-4">
+          {CHALLENGES.map((challenge) => {
+            const isDone = completedIds.includes(challenge.id);
+
+            return (
+              <View 
+                key={challenge.id} 
+                className={`rounded-2xl p-5 border flex-col gap-4 ${
+                  isDone 
+                    ? (theme === 'dark' ? 'bg-slate-900/40 border-slate-800/60 opacity-60' : 'bg-slate-50 border-slate-200 opacity-60')
+                    : (theme === 'dark' ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200 shadow-sm')
+                }`}
+              >
+                <View>
+                  <View className="flex-row justify-between items-start mb-3">
+                    <View className={`w-12 h-12 rounded-xl items-center justify-center border ${
+                      theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-cyan-50 border-cyan-100'
+                    }`}>
+                      <MaterialIcons 
+                        name={challenge.icon} 
+                        size={28} 
+                        color={isDone ? '#94A3B8' : (theme === 'dark' ? '#00E5FF' : '#0284C7')} 
+                      />
+                    </View>
+                    <View className={`px-2.5 py-1.5 rounded-lg flex-row items-center gap-1 border ${
+                      isDone 
+                        ? (theme === 'dark' ? 'bg-slate-800/50 border-slate-700' : 'bg-slate-100 border-slate-200')
+                        : (theme === 'dark' ? 'bg-amber-500/10 border-amber-500/30' : 'bg-amber-50 border-amber-200')
+                    }`}>
+                      <MaterialIcons 
+                        name={isDone ? "check" : "stars"} 
+                        size={14} 
+                        color={isDone ? "#94A3B8" : (theme === 'dark' ? '#FBBF24' : '#D97706')} 
+                      />
+                      <Text className={`font-jetbrains text-[11px] uppercase font-bold ${
+                        isDone 
+                          ? 'text-slate-500' 
+                          : (theme === 'dark' ? 'text-amber-400' : 'text-amber-800')
+                      }`}>
+                        {isDone ? 'Concluído' : `+${challenge.points} pts`}
+                      </Text>
+                    </View>
                   </View>
+                  
+                  <Text className={`font-sora font-bold text-xl mb-1 ${
+                    isDone ? 'text-slate-400 line-through' : (theme === 'dark' ? 'text-white' : 'text-slate-900')
+                  }`}>
+                    {challenge.title}
+                  </Text>
+                  <Text className={`font-hanken text-sm mb-4 leading-5 ${
+                    theme === 'dark' ? 'text-slate-400' : 'text-slate-600'
+                  }`} numberOfLines={2}>
+                    {challenge.description}
+                  </Text>
+
+                  <View className={`w-full h-2 rounded-full overflow-hidden mb-2 ${
+                    theme === 'dark' ? 'bg-slate-800' : 'bg-slate-200'
+                  }`}>
+                    <LinearGradient
+                      colors={isDone 
+                        ? ['#94A3B8', '#64748B'] 
+                        : (theme === 'dark' ? ['#00E5FF', '#3B82F6'] : ['#0284C7', '#0D9488'])
+                      }
+                      start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                      style={{ width: `${isDone ? 100 : challenge.progressPercent}%`, height: '100%', borderRadius: 9999 }}
+                    />
+                  </View>
+                  <View className="flex-row justify-between">
+                    <Text className={`font-jetbrains text-[11px] font-semibold ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
+                      {isDone ? challenge.targetText : challenge.progressText}
+                    </Text>
+                    <Text className={`font-jetbrains text-[11px] font-semibold ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
+                      {challenge.targetText}
+                    </Text>
+                  </View>
+                </View>
+
+                {isDone ? (
+                  <View className={`w-full py-3.5 rounded-xl border items-center justify-center flex-row gap-2 ${
+                    theme === 'dark' ? 'bg-slate-800/40 border-slate-800' : 'bg-slate-100 border-slate-200'
+                  }`}>
+                    <MaterialIcons name="check-circle" size={18} color="#94A3B8" />
+                    <Text 
+                      style={{ includeFontPadding: false, textAlignVertical: 'center' }}
+                      className="font-jetbrains text-xs font-bold uppercase text-slate-500"
+                    >
+                      Desafio Concluído
+                    </Text>
+                  </View>
+                ) : (
+                  <TouchableOpacity 
+                    onPress={() => handleComplete(challenge)}
+                    style={{ borderRadius: 12, overflow: 'hidden' }}
+                    className="w-full shadow-sm flex-row items-center justify-center"
+                    activeOpacity={0.85}
+                  >
+                    <LinearGradient
+                      colors={theme === 'dark' ? ['#00E5FF', '#0284C7'] : ['#0284C7', '#0369A1']}
+                      start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                      style={{ borderRadius: 12 }}
+                      className="w-full py-3.5 flex-row items-center justify-center gap-2 rounded-xl"
+                    >
+                      <MaterialIcons name="check-circle" size={18} color="#ffffff" />
+                      <Text 
+                        numberOfLines={1}
+                        style={{ includeFontPadding: false, textAlignVertical: 'center' }}
+                        className="font-jetbrains text-xs font-bold uppercase text-white tracking-wide"
+                      >
+                        Concluir e Ganhar +{challenge.points} PTS
+                      </Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
                 )}
               </View>
-            )}
-          </TouchableOpacity>
-          {expandedChallenge === challenge.id && (
-            <CustomButton title="Completar Desafio" onPress={() => completeChallenge(challenge)} />
-          )}
+            );
+          })}
         </View>
-      ))}
-    </ScrollView>
+      </ScrollView>
+
+      <BottomNav />
+    </View>
   );
 }
