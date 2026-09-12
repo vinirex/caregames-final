@@ -92,10 +92,6 @@ export default function DesafiosScreen() {
         'emoji-events',
         '#FBBF24'
       );
-      Alert.alert(
-        'Desafio Concluído! 🎉',
-        `Parabéns! Você ganhou +${challenge.points} pontos por concluir "${challenge.title}". Total atual: ${points + challenge.points} PTS`
-      );
     }
   };
 
@@ -219,16 +215,19 @@ export default function DesafiosScreen() {
                 ) : (
                   <TouchableOpacity 
                     onPress={() => handleComplete(challenge)}
-                    className="w-full rounded-xl overflow-hidden shadow-sm flex-row items-center justify-center"
+                    style={{ borderRadius: 12, overflow: 'hidden' }}
+                    className="w-full shadow-sm flex-row items-center justify-center"
                     activeOpacity={0.85}
                   >
                     <LinearGradient
                       colors={theme === 'dark' ? ['#00E5FF', '#0284C7'] : ['#0284C7', '#0369A1']}
                       start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                      className="w-full py-3.5 flex-row items-center justify-center gap-2"
+                      style={{ borderRadius: 12 }}
+                      className="w-full py-3.5 flex-row items-center justify-center gap-2 rounded-xl"
                     >
                       <MaterialIcons name="check-circle" size={18} color="#ffffff" />
                       <Text 
+                        numberOfLines={1}
                         style={{ includeFontPadding: false, textAlignVertical: 'center' }}
                         className="font-jetbrains text-xs font-bold uppercase text-white tracking-wide"
                       >

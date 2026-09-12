@@ -12,6 +12,21 @@
       "tsconfigPaths": true
     },
     "plugins": [
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/Sora-Regular.ttf",
+            "./assets/fonts/Sora-SemiBold.ttf",
+            "./assets/fonts/Sora-Bold.ttf",
+            "./assets/fonts/Sora-ExtraBold.ttf",
+            "./assets/fonts/HankenGrotesk-Regular.ttf",
+            "./assets/fonts/HankenGrotesk-SemiBold.ttf",
+            "./assets/fonts/JetBrainsMono-Regular.ttf",
+            "./assets/fonts/JetBrainsMono-Bold.ttf"
+          ]
+        }
+      ],
       "expo-video",
       "expo-status-bar",
       "expo-splash-screen",

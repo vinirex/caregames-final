@@ -2,12 +2,11 @@ import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useRouter, usePathname } from 'expo-router';
+import { router, usePathname } from 'expo-router';
 import { useTheme } from '../context/ThemeContext';
 
 export function BottomNav() {
   const insets = useSafeAreaInsets();
-  const router = useRouter();
   const pathname = usePathname();
   const { theme } = useTheme();
 

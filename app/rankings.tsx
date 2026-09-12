@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, Image, TouchableOpacity } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../context/ThemeContext';
 import { usePoints } from '../context/PointsContext';
 import { useAuth } from '../context/AuthContext';
@@ -11,6 +12,8 @@ import { api, LeaderboardUser } from '../services/api';
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+const DEFAULT_AVATAR = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150";
+
 export default function RankingsScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
@@ -20,12 +23,26 @@ export default function RankingsScreen() {
 
   const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>([]);
   const [userRank, setUserRank] = useState<number>(4);
+  const [userPhoto, setUserPhoto] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchRankings = async () => {
       const { leaderboard: list, userRank: rank } = await api.getLeaderboard(activeEmail);
       setLeaderboard(list);
       setUserRank(rank);
+
+      try {
+        const photoKey = `@profile_photo_${activeEmail}`;
+        const savedPhoto = await AsyncStorage.getItem(photoKey);
+        if (savedPhoto) setUserPhoto(savedPhoto);
+
+        const photoRes = await api.getProfilePhoto(activeEmail);
+        if (photoRes.success && photoRes.photoUri) {
+          setUserPhoto(photoRes.photoUri);
+        }
+      } catch (e) {
+        console.error('Error loading ranking user photo:', e);
+      }
     };
     fetchRankings();
   }, [activeEmail, points]);
@@ -85,16 +102,13 @@ export default function RankingsScreen() {
                   </Text>
                   
                   <View className="flex-1 flex-row items-center gap-4">
-                    {item.avatar ? (
+                    <View className="w-10 h-10 rounded-full overflow-hidden border-2 border-cyan-400">
                       <Image 
-                        source={{ uri: item.avatar }} 
-                        className="w-10 h-10 rounded-full border-2 border-cyan-400"
+                        source={{ uri: userPhoto || item.avatar || DEFAULT_AVATAR }} 
+                        className="w-full h-full"
+                        resizeMode="cover"
                       />
-                    ) : (
-                      <View className="w-10 h-10 rounded-full items-center justify-center border-2 bg-cyan-500/20 border-cyan-400">
-                        <Text className="font-jetbrains text-[12px] font-bold text-cyan-400">VOCÊ</Text>
-                      </View>
-                    )}
+                    </View>
                     <View>
                       <Text className={`font-hanken text-base font-bold ${
                         theme === 'dark' ? 'text-white' : 'text-cyan-950'

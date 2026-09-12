@@ -90,21 +90,24 @@ export default function WearablesScreen() {
 
               <TouchableOpacity 
                 onPress={refreshHealthData}
-                className="w-full rounded-xl overflow-hidden shadow-sm flex-row items-center justify-center" 
+                style={{ borderRadius: 12, overflow: 'hidden' }}
+                className="w-full shadow-sm" 
                 activeOpacity={0.85}
               >
                 <LinearGradient
                   colors={theme === 'dark' ? ['#00E5FF', '#0284C7'] : ['#0284C7', '#0369A1']}
                   start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                  className="w-full py-3.5 flex-row items-center justify-center gap-2"
+                  style={{ borderRadius: 12 }}
+                  className="w-full px-5 py-3.5 flex-row items-center justify-between rounded-xl"
                 >
-                  <MaterialIcons name="sync" size={20} color="#ffffff" />
                   <Text 
+                    numberOfLines={1}
                     style={{ includeFontPadding: false, textAlignVertical: 'center' }}
-                    className="font-sora text-base font-bold text-white tracking-wide"
+                    className="font-sora text-sm font-bold text-white tracking-wide"
                   >
                     Forçar Sincronização
                   </Text>
+                  <MaterialIcons name="sync" size={20} color="#ffffff" />
                 </LinearGradient>
               </TouchableOpacity>
             </View>

@@ -5,7 +5,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
-import { useRouter } from 'expo-router';
+import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api } from '../services/api';
@@ -31,7 +31,6 @@ export function TopAppBar({ title = "Care Games +", onMenuPress, showMenu = fals
     deleteNotification,
     clearReadNotifications,
   } = useNotifications();
-  const router = useRouter();
 
   const [menuVisible, setMenuVisible] = useState(false);
   const [notificationsVisible, setNotificationsVisible] = useState(false);
@@ -278,22 +277,13 @@ export function TopAppBar({ title = "Care Games +", onMenuPress, showMenu = fals
 
             {/* Menu Option 4: Logout */}
             <TouchableOpacity 
-              onPress={() => {
-                setMenuVisible(false);
-                Alert.alert('Sair', 'Deseja realmente sair?', [
-                  { text: 'Cancelar', style: 'cancel' },
-                  { 
-                    text: 'Sair', 
-                    style: 'destructive', 
-                    onPress: async () => {
-                      try {
-                        await logout();
-                      } catch (e) {
-                        console.error('Logout error:', e);
-                      }
-                    } 
-                  }
-                ]);
+              onPress={async () => {
+                setMenuVisible(false);      
+                try {
+                  await logout();
+                } catch (e) {
+                  console.error('Logout error:', e);
+                }
               }}
               className="flex-row items-center justify-center gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20"
             >

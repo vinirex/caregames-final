@@ -71,7 +71,6 @@ export default function BenefitsScreen() {
         'card-giftcard',
         '#10B981'
       );
-      Alert.alert('Benefício Resgatado!', `Você resgatou "${benefit.title}" com sucesso.`);
     } else {
       Alert.alert('Pontos Insuficientes', `Você não tem pontos suficientes para resgatar "${benefit.title}".`);
     }
@@ -130,7 +129,8 @@ export default function BenefitsScreen() {
                 
                 <TouchableOpacity 
                   onPress={() => handleRedeem(benefit)}
-                  className={`rounded-xl overflow-hidden flex-row items-center justify-center ${points >= benefit.points ? 'shadow-sm' : 'opacity-50'}`}
+                  style={{ borderRadius: 12, overflow: 'hidden' }}
+                  className={`flex-row items-center justify-center ${points >= benefit.points ? 'shadow-sm' : 'opacity-50'}`}
                   disabled={points < benefit.points}
                   activeOpacity={0.85}
                 >
@@ -140,10 +140,12 @@ export default function BenefitsScreen() {
                       ['#64748B', '#475569']
                     }
                     start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                    className="px-5 py-2.5 flex-row items-center justify-center gap-2"
+                    style={{ borderRadius: 12 }}
+                    className="px-5 py-2.5 flex-row items-center justify-center gap-2 rounded-xl"
                   >
                     <MaterialIcons name="redeem" size={16} color="#ffffff" />
                     <Text 
+                      numberOfLines={1}
                       style={{ includeFontPadding: false, textAlignVertical: 'center' }}
                       className="font-jetbrains text-xs font-bold uppercase text-white tracking-wide"
                     >
