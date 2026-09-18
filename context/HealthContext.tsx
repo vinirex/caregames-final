@@ -15,6 +15,7 @@ export interface HealthContextType {
   error: string | null;
   lastSyncTime: string;
   refreshHealthData: () => Promise<void>;
+  requestPermissions: () => Promise<boolean>;
 }
 
 const HealthContext = createContext<HealthContextType | undefined>(undefined);
@@ -84,14 +85,9 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
       const stepCountType = HealthKit.HKQuantityTypeIdentifier?.stepCount || 'HKQuantityTypeIdentifierStepCount';
       const heartRateType = HealthKit.HKQuantityTypeIdentifier?.heartRate || 'HKQuantityTypeIdentifierHeartRate';
 
-      if (HealthKit.requestAuthorization) {
-        await HealthKit.requestAuthorization([stepCountType, heartRateType], []);
-      }
-
       const now = new Date();
       const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
 
-      // Query statistics for step count with cumulativeSum for native Apple Health deduplication
       if (HealthKit.queryStatisticsForQuantity) {
         const stats = await HealthKit.queryStatisticsForQuantity(stepCountType, ['cumulativeSum'], {
           from: startOfDay,
@@ -116,7 +112,6 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      // Fetch latest heart rate sample
       if (HealthKit.queryQuantitySamples) {
         const hrSamples = await HealthKit.queryQuantitySamples(heartRateType, {
           from: startOfDay,
@@ -175,21 +170,20 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
         console.warn('Health Connect initialize warning:', initErr);
       }
 
-      try {
-        await HealthConnect.requestPermission([
-          { accessType: 'read', recordType: 'Steps' },
-          { accessType: 'read', recordType: 'HeartRate' },
-          { accessType: 'read', recordType: 'RestingHeartRate' },
-        ]);
-      } catch (permErr) {
-        console.warn('Health Connect requestPermission warning:', permErr);
+      // Check permissions before querying records
+      const grantedPermissions = await HealthConnect.getGrantedPermissions();
+      const hasPermissions = Array.isArray(grantedPermissions) && grantedPermissions.length > 0;
+
+      if (!hasPermissions) {
+        setIsLoading(false);
+        return;
       }
 
       const now = new Date();
       const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
       const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-      // --- 1. FETCH STEPS WITH RESILIENT FALLBACKS AND EXTENSIVE KEY CHECKING ---
+      // --- 1. FETCH STEPS ---
       let fetchedSteps = 0;
       let stepSuccess = false;
 
@@ -247,11 +241,10 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
 
       setSteps(fetchedSteps);
 
-      // --- 2. FETCH HEART RATE & RESTING HEART RATE WITH RESILIENT FALLBACKS ---
+      // --- 2. FETCH HEART RATE ---
       let foundBpm: number | null = null;
 
       if (HealthConnect.readRecords) {
-        // Query HeartRate over last 24 hours
         try {
           const hrResponse = await HealthConnect.readRecords('HeartRate', {
             timeRangeFilter: {
@@ -290,7 +283,6 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
           console.warn('HealthConnect readRecords HeartRate warning:', hrErr);
         }
 
-        // Fallback to RestingHeartRate if no valid HeartRate sample found
         if (!foundBpm) {
           try {
             const rhrResponse = await HealthConnect.readRecords('RestingHeartRate', {
@@ -346,6 +338,47 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [fetchIOSData, fetchAndroidData]);
 
+  // Explicit user-triggered permissions flow
+  const requestPermissions = useCallback(async (): Promise<boolean> => {
+    try {
+      setIsLoading(true);
+
+      if (Platform.OS === 'ios') {
+        const HealthKitModule = require('@kingstinct/react-native-healthkit');
+        const HealthKit = HealthKitModule.default || HealthKitModule;
+        const stepCountType = HealthKit.HKQuantityTypeIdentifier?.stepCount || 'HKQuantityTypeIdentifierStepCount';
+        const heartRateType = HealthKit.HKQuantityTypeIdentifier?.heartRate || 'HKQuantityTypeIdentifierHeartRate';
+
+        if (HealthKit.requestAuthorization) {
+          await HealthKit.requestAuthorization([stepCountType, heartRateType], []);
+          await fetchIOSData();
+          return true;
+        }
+      } else if (Platform.OS === 'android') {
+        const HealthConnectModule = require('react-native-health-connect');
+        const HealthConnect = HealthConnectModule.default || HealthConnectModule;
+
+        const granted = await HealthConnect.requestPermission([
+          { accessType: 'read', recordType: 'Steps' },
+          { accessType: 'read', recordType: 'HeartRate' },
+          { accessType: 'read', recordType: 'RestingHeartRate' },
+        ]);
+
+        if (Array.isArray(granted) && granted.length > 0) {
+          await fetchAndroidData();
+          return true;
+        }
+      }
+      return false;
+    } catch (err: any) {
+      console.warn('Error requesting health permissions:', err);
+      setError(err?.message || 'Erro ao solicitar permissões');
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [fetchIOSData, fetchAndroidData]);
+
   useEffect(() => {
     refreshHealthData();
 
@@ -375,6 +408,7 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
         error,
         lastSyncTime,
         refreshHealthData,
+        requestPermissions,
       }}
     >
       {children}
