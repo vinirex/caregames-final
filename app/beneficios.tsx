@@ -130,7 +130,7 @@ export default function BenefitsScreen() {
                 <TouchableOpacity 
                   onPress={() => handleRedeem(benefit)}
                   style={{ borderRadius: 12, overflow: 'hidden' }}
-                  className={`flex-row items-center justify-center ${points >= benefit.points ? 'shadow-sm' : 'opacity-50'}`}
+                  className={`${points >= benefit.points ? 'shadow-sm' : 'opacity-50'}`}
                   disabled={points < benefit.points}
                   activeOpacity={0.85}
                 >
@@ -140,13 +140,12 @@ export default function BenefitsScreen() {
                       ['#64748B', '#475569']
                     }
                     start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                    style={{ borderRadius: 12 }}
-                    className="px-5 py-2.5 flex-row items-center justify-center gap-2 rounded-xl"
+                    style={{ height: 40, paddingHorizontal: 16, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}
                   >
                     <MaterialIcons name="redeem" size={16} color="#ffffff" />
                     <Text 
                       numberOfLines={1}
-                      style={{ includeFontPadding: false, textAlignVertical: 'center' }}
+                      style={{ includeFontPadding: false }}
                       className="font-jetbrains text-xs font-bold uppercase text-white tracking-wide"
                     >
                       Resgatar

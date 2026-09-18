@@ -58,7 +58,8 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
     try {
       let HealthKit: any;
       try {
-        HealthKit = require('@kingstinct/react-native-healthkit');
+        const HealthKitModule = require('@kingstinct/react-native-healthkit');
+        HealthKit = HealthKitModule.default || HealthKitModule;
       } catch (e) {
         setIsAvailable(false);
         setIsLoading(false);
@@ -90,7 +91,20 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
       const now = new Date();
       const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
 
-      if (HealthKit.queryQuantitySamples) {
+      // Query statistics for step count with cumulativeSum for native Apple Health deduplication
+      if (HealthKit.queryStatisticsForQuantity) {
+        const stats = await HealthKit.queryStatisticsForQuantity(stepCountType, ['cumulativeSum'], {
+          from: startOfDay,
+          to: now,
+        });
+
+        if (stats?.sumQuantity) {
+          const stepVal = typeof stats.sumQuantity === 'number'
+            ? stats.sumQuantity
+            : (stats.sumQuantity.quantity || stats.sumQuantity.value || 0);
+          setSteps(Math.round(stepVal));
+        }
+      } else if (HealthKit.queryQuantitySamples) {
         const stepSamples = await HealthKit.queryQuantitySamples(stepCountType, {
           from: startOfDay,
           to: now,
@@ -102,6 +116,7 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
+      // Fetch latest heart rate sample
       if (HealthKit.queryQuantitySamples) {
         const hrSamples = await HealthKit.queryQuantitySamples(heartRateType, {
           from: startOfDay,
@@ -116,7 +131,8 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      setLastSyncTime('Agora mesmo');
+      const syncTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      setLastSyncTime(syncTime);
       setError(null);
     } catch (err: any) {
       setIsAvailable(false);
@@ -130,7 +146,8 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
     try {
       let HealthConnect: any;
       try {
-        HealthConnect = require('react-native-health-connect');
+        const HealthConnectModule = require('react-native-health-connect');
+        HealthConnect = HealthConnectModule.default || HealthConnectModule;
       } catch (e) {
         setIsAvailable(false);
         setIsLoading(false);
@@ -161,38 +178,57 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
       const now = new Date();
       const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
 
-      const stepsResponse = await HealthConnect.readRecords('Steps', {
-        timeRangeFilter: {
-          operator: 'between',
-          startTime: startOfDay.toISOString(),
-          endTime: now.toISOString(),
-        },
-      });
+      // Aggregate step records from startOfDay to now to prevent page-size truncation
+      if (HealthConnect.aggregateRecord) {
+        const aggregateResult = await HealthConnect.aggregateRecord({
+          recordType: 'Steps',
+          timeRangeFilter: {
+            operator: 'between',
+            startTime: startOfDay.toISOString(),
+            endTime: now.toISOString(),
+          },
+        });
 
-      if (stepsResponse?.records) {
-        const totalSteps = stepsResponse.records.reduce((sum: number, record: any) => sum + (record.count || 0), 0);
+        const totalSteps = aggregateResult?.count ?? aggregateResult?.STEPS_COUNT_TOTAL ?? 0;
         setSteps(totalSteps);
-      }
+      } else if (HealthConnect.readRecords) {
+        const stepsResponse = await HealthConnect.readRecords('Steps', {
+          timeRangeFilter: {
+            operator: 'between',
+            startTime: startOfDay.toISOString(),
+            endTime: now.toISOString(),
+          },
+        });
 
-      const hrResponse = await HealthConnect.readRecords('HeartRate', {
-        timeRangeFilter: {
-          operator: 'between',
-          startTime: startOfDay.toISOString(),
-          endTime: now.toISOString(),
-        },
-        ascendingOrder: false,
-        pageSize: 1,
-      });
-
-      if (hrResponse?.records && hrResponse.records.length > 0) {
-        const latestRecord = hrResponse.records[0];
-        if (latestRecord.samples && latestRecord.samples.length > 0) {
-          const bpm = latestRecord.samples[latestRecord.samples.length - 1].beatsPerMinute;
-          if (bpm) setHeartRate(Math.round(bpm));
+        if (stepsResponse?.records) {
+          const totalSteps = stepsResponse.records.reduce((sum: number, record: any) => sum + (record.count || 0), 0);
+          setSteps(totalSteps);
         }
       }
 
-      setLastSyncTime('Agora mesmo');
+      // Fetch latest heart rate sample
+      if (HealthConnect.readRecords) {
+        const hrResponse = await HealthConnect.readRecords('HeartRate', {
+          timeRangeFilter: {
+            operator: 'between',
+            startTime: startOfDay.toISOString(),
+            endTime: now.toISOString(),
+          },
+          ascendingOrder: false,
+          pageSize: 1,
+        });
+
+        if (hrResponse?.records && hrResponse.records.length > 0) {
+          const latestRecord = hrResponse.records[0];
+          if (latestRecord.samples && latestRecord.samples.length > 0) {
+            const bpm = latestRecord.samples[latestRecord.samples.length - 1].beatsPerMinute;
+            if (bpm) setHeartRate(Math.round(bpm));
+          }
+        }
+      }
+
+      const syncTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      setLastSyncTime(syncTime);
       setError(null);
     } catch (err: any) {
       setIsAvailable(false);

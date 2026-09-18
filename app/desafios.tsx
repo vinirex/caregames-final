@@ -201,12 +201,16 @@ export default function DesafiosScreen() {
                 </View>
 
                 {isDone ? (
-                  <View className={`w-full py-3.5 rounded-xl border items-center justify-center flex-row gap-2 ${
-                    theme === 'dark' ? 'bg-slate-800/40 border-slate-800' : 'bg-slate-100 border-slate-200'
-                  }`}>
+                  <View 
+                    style={{ width: '100%', height: 48, borderRadius: 12 }}
+                    className={`border items-center justify-center flex-row gap-2 ${
+                      theme === 'dark' ? 'bg-slate-800/40 border-slate-800' : 'bg-slate-100 border-slate-200'
+                    }`}
+                  >
                     <MaterialIcons name="check-circle" size={18} color="#94A3B8" />
                     <Text 
-                      style={{ includeFontPadding: false, textAlignVertical: 'center' }}
+                      numberOfLines={1}
+                      style={{ includeFontPadding: false }}
                       className="font-jetbrains text-xs font-bold uppercase text-slate-500"
                     >
                       Desafio Concluído
@@ -215,23 +219,22 @@ export default function DesafiosScreen() {
                 ) : (
                   <TouchableOpacity 
                     onPress={() => handleComplete(challenge)}
-                    style={{ borderRadius: 12, overflow: 'hidden' }}
-                    className="w-full shadow-sm flex-row items-center justify-center"
+                    style={{ width: '100%', borderRadius: 12, overflow: 'hidden' }}
+                    className="w-full shadow-sm"
                     activeOpacity={0.85}
                   >
                     <LinearGradient
                       colors={theme === 'dark' ? ['#00E5FF', '#0284C7'] : ['#0284C7', '#0369A1']}
                       start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                      style={{ borderRadius: 12 }}
-                      className="w-full py-3.5 flex-row items-center justify-center gap-2 rounded-xl"
+                      style={{ width: '100%', height: 48, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}
                     >
                       <MaterialIcons name="check-circle" size={18} color="#ffffff" />
                       <Text 
                         numberOfLines={1}
-                        style={{ includeFontPadding: false, textAlignVertical: 'center' }}
+                        style={{ includeFontPadding: false }}
                         className="font-jetbrains text-xs font-bold uppercase text-white tracking-wide"
                       >
-                        Concluir e Ganhar +{challenge.points} PTS
+                        Concluir
                       </Text>
                     </LinearGradient>
                   </TouchableOpacity>

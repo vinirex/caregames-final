@@ -47,8 +47,9 @@ export const CustomButton: React.FC<CustomButtonProps> = ({
       disabled={disabled || loading}
       style={[
         {
+          width: "100%",
+          height: 48,
           backgroundColor,
-          paddingVertical: 14,
           paddingHorizontal: 22,
           borderRadius: 12,
           flexDirection: "row",
@@ -71,7 +72,6 @@ export const CustomButton: React.FC<CustomButtonProps> = ({
               fontSize: 16,
               fontWeight: "600",
               includeFontPadding: false,
-              textAlignVertical: "center",
             },
             textStyle,
           ]}
