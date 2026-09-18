@@ -62,6 +62,13 @@
         "android.permission.health.READ_STEPS",
         "android.permission.health.READ_HEART_RATE"
       ]
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "34008c22-6fcd-4b83-bef9-f47c470e3a0e"
+      }
+    },
+    "owner": "vinirex"
   }
 }
