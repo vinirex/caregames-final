@@ -173,10 +173,12 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
       await HealthConnect.requestPermission([
         { accessType: 'read', recordType: 'Steps' },
         { accessType: 'read', recordType: 'HeartRate' },
+        { accessType: 'read', recordType: 'RestingHeartRate' },
       ]);
 
       const now = new Date();
       const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+      const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
       // Aggregate step records from startOfDay to now to prevent page-size truncation
       if (HealthConnect.aggregateRecord) {
@@ -206,26 +208,70 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      // Fetch latest heart rate sample
+      // Fetch latest heart rate sample over 24-hour range, fallback to RestingHeartRate if missing
+      let foundBpm: number | null = null;
+
       if (HealthConnect.readRecords) {
+        // 1. Query HeartRate over last 24 hours
         const hrResponse = await HealthConnect.readRecords('HeartRate', {
           timeRangeFilter: {
             operator: 'between',
-            startTime: startOfDay.toISOString(),
+            startTime: twentyFourHoursAgo.toISOString(),
             endTime: now.toISOString(),
           },
           ascendingOrder: false,
-          pageSize: 1,
         });
 
         if (hrResponse?.records && hrResponse.records.length > 0) {
-          const latestRecord = hrResponse.records[0];
-          if (latestRecord.samples && latestRecord.samples.length > 0) {
-            const bpm = latestRecord.samples[latestRecord.samples.length - 1].beatsPerMinute;
-            if (bpm) setHeartRate(Math.round(bpm));
+          let allSamples: any[] = [];
+          hrResponse.records.forEach((record: any) => {
+            if (Array.isArray(record.samples)) {
+              allSamples.push(...record.samples);
+            }
+          });
+
+          if (allSamples.length > 0) {
+            allSamples.sort((a, b) => {
+              const timeA = new Date(a.time || a.startTime || 0).getTime();
+              const timeB = new Date(b.time || b.startTime || 0).getTime();
+              return timeB - timeA;
+            });
+
+            const latestSample = allSamples[0];
+            if (latestSample?.beatsPerMinute) {
+              foundBpm = Math.round(latestSample.beatsPerMinute);
+            }
+          }
+        }
+
+        // 2. Fallback to RestingHeartRate if no valid HeartRate sample found
+        if (!foundBpm) {
+          const rhrResponse = await HealthConnect.readRecords('RestingHeartRate', {
+            timeRangeFilter: {
+              operator: 'between',
+              startTime: twentyFourHoursAgo.toISOString(),
+              endTime: now.toISOString(),
+            },
+            ascendingOrder: false,
+          });
+
+          if (rhrResponse?.records && rhrResponse.records.length > 0) {
+            const sortedRecords = [...rhrResponse.records].sort((a, b) => {
+              const timeA = new Date(a.time || a.startTime || 0).getTime();
+              const timeB = new Date(b.time || b.startTime || 0).getTime();
+              return timeB - timeA;
+            });
+
+            const latestRecord = sortedRecords[0];
+            const bpm = latestRecord?.beatsPerMinute ?? latestRecord?.value?.beatsPerMinute ?? latestRecord?.value ?? null;
+            if (bpm) {
+              foundBpm = Math.round(bpm);
+            }
           }
         }
       }
+
+      setHeartRate(foundBpm);
 
       const syncTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       setLastSyncTime(syncTime);

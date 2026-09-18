@@ -55,6 +55,7 @@ const CHALLENGES: Challenge[] = [
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNotifications } from '../context/NotificationContext';
+import { useHealthData } from '../hooks/useHealthData';
 
 export default function DesafiosScreen() {
   const insets = useSafeAreaInsets();
@@ -62,8 +63,10 @@ export default function DesafiosScreen() {
   const { points, addPoints } = usePoints();
   const { userEmail } = useAuth();
   const { addNotification } = useNotifications();
+  const { steps, isConnected } = useHealthData();
   const activeEmail = userEmail || 'test@test.com';
 
+  const currentStepCount = isConnected ? steps : 0;
   const [completedIds, setCompletedIds] = useState<string[]>([]);
 
   useEffect(() => {
@@ -79,6 +82,14 @@ export default function DesafiosScreen() {
   const handleComplete = async (challenge: Challenge) => {
     if (completedIds.includes(challenge.id)) {
       Alert.alert('Desafio já concluído', 'Você já recebeu os pontos deste desafio.');
+      return;
+    }
+
+    if (challenge.id === 'steps_10k' && currentStepCount < 10000) {
+      Alert.alert(
+        'Meta de passos não atingida 🏃‍♂️',
+        `Você precisa atingir 10.000 passos no dia para concluir este desafio. Seu progresso atual é de ${currentStepCount.toLocaleString('pt-BR')} passos.`
+      );
       return;
     }
 
@@ -126,6 +137,16 @@ export default function DesafiosScreen() {
         <View className="flex-col gap-4">
           {CHALLENGES.map((challenge) => {
             const isDone = completedIds.includes(challenge.id);
+            const isStepChallenge = challenge.id === 'steps_10k';
+            const canComplete = !isStepChallenge || currentStepCount >= 10000;
+
+            const progressPercent = isStepChallenge
+              ? Math.min(100, Math.round((currentStepCount / 10000) * 100))
+              : challenge.progressPercent;
+
+            const progressText = isStepChallenge
+              ? currentStepCount.toLocaleString('pt-BR')
+              : challenge.progressText;
 
             return (
               <View 
@@ -187,12 +208,12 @@ export default function DesafiosScreen() {
                         : (theme === 'dark' ? ['#00E5FF', '#3B82F6'] : ['#0284C7', '#0D9488'])
                       }
                       start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                      style={{ width: `${isDone ? 100 : challenge.progressPercent}%`, height: '100%', borderRadius: 9999 }}
+                      style={{ width: `${isDone ? 100 : progressPercent}%`, height: '100%', borderRadius: 9999 }}
                     />
                   </View>
                   <View className="flex-row justify-between">
                     <Text className={`font-jetbrains text-[11px] font-semibold ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
-                      {isDone ? challenge.targetText : challenge.progressText}
+                      {isDone ? challenge.targetText : progressText}
                     </Text>
                     <Text className={`font-jetbrains text-[11px] font-semibold ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
                       {challenge.targetText}
@@ -220,21 +241,24 @@ export default function DesafiosScreen() {
                   <TouchableOpacity 
                     onPress={() => handleComplete(challenge)}
                     style={{ width: '100%', borderRadius: 12, overflow: 'hidden' }}
-                    className="w-full shadow-sm"
+                    className={`w-full shadow-sm ${!canComplete ? 'opacity-70' : ''}`}
                     activeOpacity={0.85}
                   >
                     <LinearGradient
-                      colors={theme === 'dark' ? ['#00E5FF', '#0284C7'] : ['#0284C7', '#0369A1']}
+                      colors={canComplete
+                        ? (theme === 'dark' ? ['#00E5FF', '#0284C7'] : ['#0284C7', '#0369A1'])
+                        : ['#64748B', '#475569']
+                      }
                       start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
                       style={{ width: '100%', height: 48, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}
                     >
-                      <MaterialIcons name="check-circle" size={18} color="#ffffff" />
+                      <MaterialIcons name={canComplete ? "check-circle" : "lock"} size={18} color="#ffffff" />
                       <Text 
                         numberOfLines={1}
                         style={{ includeFontPadding: false }}
                         className="font-jetbrains text-xs font-bold uppercase text-white tracking-wide"
                       >
-                        Concluir
+                        {canComplete ? 'Concluir' : `Atingir 10K (${currentStepCount.toLocaleString('pt-BR')})`}
                       </Text>
                     </LinearGradient>
                   </TouchableOpacity>

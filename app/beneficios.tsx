@@ -85,7 +85,7 @@ export default function BenefitsScreen() {
         className="flex-1 px-5"
       >
         <View className="mb-6 flex-row justify-between items-start">
-          <View className="flex-col">
+          <View className="flex-col flex-1 mr-3">
             <Text className={`font-sora text-3xl font-bold tracking-tight mb-1 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
               Benefícios
             </Text>
@@ -93,7 +93,7 @@ export default function BenefitsScreen() {
               Resgate seus pontos por recompensas exclusivas.
             </Text>
           </View>
-          <View className={`flex-row items-center gap-1.5 px-3 py-2 rounded-xl border ${
+          <View className={`flex-shrink-0 flex-row items-center gap-1.5 px-3 py-2 rounded-xl border ${
             theme === 'dark' ? 'bg-amber-500/10 border-amber-500/30' : 'bg-amber-100 border-amber-300'
           }`}>
             <MaterialIcons name="stars" size={18} color={theme === 'dark' ? '#FBBF24' : '#D97706'} />
