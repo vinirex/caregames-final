@@ -1,9 +1,11 @@
-import 'react-native-gesture-handler';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useEffect } from 'react';
 import { ThemeProvider, useTheme } from "../context/ThemeContext";
 import { PointsProvider } from "../context/PointsContext";
 import { AuthProvider, useAuth } from "../context/AuthContext";
 import { NotificationProvider } from "../context/NotificationContext";
+import { HealthProvider } from "../context/HealthContext";
+import { SwipeProvider } from "../context/SwipeContext";
 import { Stack } from "expo-router";
 import { View, ActivityIndicator } from "react-native";
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -96,16 +98,22 @@ export default function RootLayout() {
   }
 
   return (
-    <SafeAreaProvider>
-      <AuthProvider>
-        <ThemeProvider>
-          <PointsProvider>
-            <NotificationProvider>
-              <LayoutContainer />
-            </NotificationProvider>
-          </PointsProvider>
-        </ThemeProvider>
-      </AuthProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <AuthProvider>
+          <ThemeProvider>
+            <PointsProvider>
+              <NotificationProvider>
+                <HealthProvider>
+                  <SwipeProvider>
+                    <LayoutContainer />
+                  </SwipeProvider>
+                </HealthProvider>
+              </NotificationProvider>
+            </PointsProvider>
+          </ThemeProvider>
+        </AuthProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }

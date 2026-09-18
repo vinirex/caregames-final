@@ -78,7 +78,7 @@ export default function BenefitsScreen() {
 
   return (
     <View className={`flex-1 ${theme === 'dark' ? 'bg-background' : 'bg-slate-100'}`}>
-      <TopAppBar showMenu={true} title="Care Games +" />
+      <TopAppBar title="Care Games +" />
 
       <ScrollView 
         contentContainerStyle={{ paddingBottom: 110 + insets.bottom, paddingTop: 24 }}

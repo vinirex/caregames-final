@@ -1,9 +1,9 @@
 {
   "expo": {
     "name": "Care Games +",
-    "slug": "my-expo-app",
+    "slug": "caregames",
     "version": "1.0.0",
-    "scheme": "my-expo-app",
+    "scheme": "caregames",
     "plugins": [
       "expo-font",
       "expo-video",
@@ -54,22 +54,14 @@
     },
     "android": {
       "package": "com.vinicius.caregames",
-      "compileSdkVersion": 36,
-      "targetSdkVersion": 36,
-      "minSdkVersion": 26,
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/small-icon.png",
         "backgroundColor": "#0a1929"
       },
       "permissions": [
         "android.permission.health.READ_STEPS",
         "android.permission.health.READ_HEART_RATE"
       ]
-    },
-    "extra": {
-      "eas": {
-        "projectId": "a60c3fdd-2a2b-4c47-9ca7-e71a7fdbf3c9"
-      }
     }
   }
 }

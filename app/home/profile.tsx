@@ -41,8 +41,8 @@ export default function ProfileScreen() {
   const photoSize = Math.min(width * 0.2, 120);
   const borderRadius = photoSize / 2;
   
-  // In a real app, this data would come from your auth context or API
-  const [name, setName] = useState('');
+  const activeEmail = userEmail || 'test@test.com';
+  const [name, setName] = useState(activeEmail.split('@')[0]);
   const [birthday, setBirthday] = useState('');
   const [address, setAddress] = useState('');
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
@@ -197,7 +197,7 @@ export default function ProfileScreen() {
             </View>
           </TouchableOpacity>
           <View className="flex-1 min-w-0">
-            <Text className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-black'}`}>{name || 'Nome do Usuário'}</Text>
+            <Text className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-black'}`}>{name || activeEmail.split('@')[0]}</Text>
             <Text className={`text-md mt-1 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>{userEmail || 'user@example.com'}</Text>
             <TouchableOpacity onPress={pickProfilePhoto}>
               <Text className={`text-sm mt-2 ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}>Alterar foto</Text>

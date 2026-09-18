@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Image, Modal, Share, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, Image, Modal, Share, Alert, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
@@ -13,12 +13,11 @@ import { api } from '../services/api';
 interface TopAppBarProps {
   title?: string;
   onMenuPress?: () => void;
-  showMenu?: boolean;
 }
 
 const DEFAULT_AVATAR = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150";
 
-export function TopAppBar({ title = "Care Games +", onMenuPress, showMenu = false }: TopAppBarProps) {
+export function TopAppBar({ title = "Care Games +", onMenuPress }: TopAppBarProps) {
   const insets = useSafeAreaInsets();
   const { theme, toggleTheme } = useTheme();
   const { userEmail, logout } = useAuth();
@@ -35,9 +34,8 @@ export function TopAppBar({ title = "Care Games +", onMenuPress, showMenu = fals
   const [menuVisible, setMenuVisible] = useState(false);
   const [notificationsVisible, setNotificationsVisible] = useState(false);
   const [userPhoto, setUserPhoto] = useState<string | null>(null);
-  const [userName, setUserName] = useState<string>('Alex Rivers');
-
   const activeEmail = userEmail || 'test@test.com';
+  const [userName, setUserName] = useState<string>(activeEmail.split('@')[0]);
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -54,8 +52,8 @@ export function TopAppBar({ title = "Care Games +", onMenuPress, showMenu = fals
         const profileRes = await api.getProfile(activeEmail);
         if (profileRes.success && profileRes.profile?.name) {
           setUserName(profileRes.profile.name);
-        } else if (userEmail) {
-          setUserName(userEmail.split('@')[0]);
+        } else if (activeEmail) {
+          setUserName(activeEmail.split('@')[0]);
         }
       } catch (e) {
         console.error('Error loading top bar profile data:', e);
@@ -124,9 +122,6 @@ export function TopAppBar({ title = "Care Games +", onMenuPress, showMenu = fals
       >
         <View className="flex-row items-center gap-3">
           <TouchableOpacity onPress={handleOpenMenu} activeOpacity={0.7} className="flex-row items-center gap-3">
-            {showMenu && (
-              <MaterialIcons name="menu" size={24} color={theme === 'dark' ? '#00E5FF' : '#0284C7'} />
-            )}
             <View className={`w-9 h-9 rounded-full overflow-hidden border-2 ${theme === 'dark' ? 'border-cyan-400' : 'border-cyan-600'} shadow-md`}>
               <Image 
                 source={{ uri: userPhoto || DEFAULT_AVATAR }} 
@@ -345,7 +340,12 @@ export function TopAppBar({ title = "Care Games +", onMenuPress, showMenu = fals
                 </Text>
               </View>
             ) : (
-              <View className="gap-2.5 max-h-80">
+              <ScrollView 
+                className="max-h-80" 
+                contentContainerStyle={{ gap: 10 }}
+                showsVerticalScrollIndicator={true}
+                nestedScrollEnabled={true}
+              >
                 {notifications.map((item) => (
                   <View 
                     key={item.id}
@@ -395,7 +395,7 @@ export function TopAppBar({ title = "Care Games +", onMenuPress, showMenu = fals
                     </TouchableOpacity>
                   </View>
                 ))}
-              </View>
+              </ScrollView>
             )}
 
             {/* Notification Actions */}

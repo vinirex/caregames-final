@@ -25,7 +25,7 @@ export default function HomeScreen() {
   const displaySteps = isHealthAvailable ? healthSteps : 0;
 
   const [userRank, setUserRank] = useState<number>(4);
-  const userName = userEmail ? userEmail.split('@')[0] : 'Alex';
+  const userName = activeEmail.split('@')[0];
 
   useEffect(() => {
     const fetchRank = async () => {
@@ -37,7 +37,7 @@ export default function HomeScreen() {
 
   return (
     <View className={`flex-1 ${theme === 'dark' ? 'bg-background' : 'bg-slate-100'}`}>
-      <TopAppBar showMenu={true} onMenuPress={() => console.log('Menu pressed')} />
+      <TopAppBar />
 
       <ScrollView 
         contentContainerStyle={{ paddingBottom: 110 + insets.bottom, paddingTop: 24 }}

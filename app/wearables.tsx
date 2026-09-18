@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Switch, Platform } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { TopAppBar } from '../components/TopAppBar';
@@ -12,18 +12,24 @@ import { useHealthData } from '../hooks/useHealthData';
 export default function WearablesScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
-  const { steps: healthSteps, heartRate: healthBpm, isAvailable: isHealthAvailable, refreshHealthData } = useHealthData();
-  const [syncEnabled, setSyncEnabled] = useState(isHealthAvailable);
+  const { 
+    steps: displaySteps, 
+    heartRate: healthBpm, 
+    isAvailable: isHealthAvailable, 
+    syncEnabled, 
+    setSyncEnabled, 
+    isConnected, 
+    lastSyncTime, 
+    refreshHealthData 
+  } = useHealthData();
 
-  const isConnected = isHealthAvailable && syncEnabled;
-  const displaySteps = isConnected ? healthSteps : 0;
   const displayBpm = isConnected && healthBpm ? healthBpm : 0;
   const stepGoal = 10000;
   const progressPercentage = isConnected && displaySteps > 0 ? Math.min(100, Math.round((displaySteps / stepGoal) * 100)) : 0;
 
   return (
     <View className={`flex-1 ${theme === 'dark' ? 'bg-background' : 'bg-slate-100'}`}>
-      <TopAppBar showMenu={true} title="Care Games +" />
+      <TopAppBar title="Care Games +" />
 
       <ScrollView 
         contentContainerStyle={{ paddingBottom: 110 + insets.bottom, paddingTop: 24 }}
@@ -121,7 +127,7 @@ export default function WearablesScreen() {
               ÚLTIMA SINCRONIZAÇÃO
             </Text>
             <Text className={`font-sora text-xl font-bold mb-1 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
-              {isConnected ? 'Agora mesmo' : 'Desconectado'}
+              {isConnected ? lastSyncTime : 'Desconectado'}
             </Text>
             <View className="flex-row items-center gap-2">
               <MaterialIcons 

@@ -35,7 +35,7 @@ async function getUsersDB() {
         age: '28',
         points: 1250,
         completedChallenges: [],
-        profile: { name: 'Alex Rivers' }
+        profile: { name: 'test' }
       };
       await AsyncStorage.setItem(DB_USERS_KEY, JSON.stringify(users));
     }
@@ -202,7 +202,7 @@ export const api = {
       const users = await getUsersDB();
       const userObj = users[currentUserEmail];
       const userPoints = userObj?.points ?? 1250;
-      const userName = userObj?.profile?.name || currentUserEmail.split('@')[0] || 'Alex Rivers';
+      const userName = userObj?.profile?.name || currentUserEmail.split('@')[0] || 'Usuário';
       const userAvatar = userObj?.profilePhoto;
 
       const allList: { name: string; points: number; avatar?: string; initials?: string; isCurrentUser: boolean }[] = [

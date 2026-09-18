@@ -44,7 +44,7 @@ const DEFAULT_NOTIFICATIONS: NotificationItem[] = [
   {
     id: '3',
     title: 'Dispositivo Sincronizado',
-    message: 'Seu smartwatch sincronizou 4.250 passos hoje.',
+    message: 'Seu smartwatch sincronizou!',
     time: '3 horas atrás',
     read: true,
     icon: 'watch',

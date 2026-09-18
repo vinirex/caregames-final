@@ -14,8 +14,8 @@ export function BottomNav() {
     { name: 'home', label: 'Início', icon: 'home' as const },
     { name: 'desafios', label: 'Desafios', icon: 'emoji-events' as const },
     { name: 'rankings', label: 'Rankings', icon: 'leaderboard' as const },
-    { name: 'wearables', label: 'Dispositivos', icon: 'watch' as const },
-    { name: 'beneficios', label: 'Benefícios', icon: 'card-giftcard' as const },
+    { name: 'wearables', label: 'Connect', icon: 'watch' as const },
+    { name: 'beneficios', label: 'Recompensas', icon: 'card-giftcard' as const },
   ];
 
   return (
