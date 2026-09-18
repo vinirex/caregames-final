@@ -88,6 +88,7 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
       const now = new Date();
       const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
 
+      // Query statistics for step count with cumulativeSum for native Apple Health deduplication
       if (HealthKit.queryStatisticsForQuantity) {
         const stats = await HealthKit.queryStatisticsForQuantity(stepCountType, ['cumulativeSum'], {
           from: startOfDay,
@@ -112,6 +113,7 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
+      // Fetch latest heart rate sample
       if (HealthKit.queryQuantitySamples) {
         const hrSamples = await HealthKit.queryQuantitySamples(heartRateType, {
           from: startOfDay,
@@ -170,7 +172,7 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
         console.warn('Health Connect initialize warning:', initErr);
       }
 
-      // Check permissions before querying records
+      // Pre-check granted permissions to avoid unhandled SecurityExceptions
       const grantedPermissions = await HealthConnect.getGrantedPermissions();
       const hasPermissions = Array.isArray(grantedPermissions) && grantedPermissions.length > 0;
 
@@ -183,7 +185,7 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
       const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
       const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-      // --- 1. FETCH STEPS ---
+      // --- 1. FETCH STEPS WITH RESILIENT FALLBACKS ---
       let fetchedSteps = 0;
       let stepSuccess = false;
 
@@ -241,7 +243,7 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
 
       setSteps(fetchedSteps);
 
-      // --- 2. FETCH HEART RATE ---
+      // --- 2. FETCH HEART RATE & RESTING HEART RATE WITH RESILIENT FALLBACKS ---
       let foundBpm: number | null = null;
 
       if (HealthConnect.readRecords) {
@@ -338,7 +340,7 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [fetchIOSData, fetchAndroidData]);
 
-  // Explicit user-triggered permissions flow
+  // Dedicated user-triggered permission request handler
   const requestPermissions = useCallback(async (): Promise<boolean> => {
     try {
       setIsLoading(true);
