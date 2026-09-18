@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Switch, Platform } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Switch, Platform, Alert } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { TopAppBar } from '../components/TopAppBar';
 import { BottomNav } from '../components/BottomNav';
@@ -20,12 +20,33 @@ export default function WearablesScreen() {
     setSyncEnabled, 
     isConnected, 
     lastSyncTime, 
-    refreshHealthData 
+    refreshHealthData,
+    requestPermissions,
+    isLoading
   } = useHealthData();
 
   const displayBpm = isConnected && healthBpm ? healthBpm : 0;
   const stepGoal = 10000;
   const progressPercentage = isConnected && displaySteps > 0 ? Math.min(100, Math.round((displaySteps / stepGoal) * 100)) : 0;
+
+  const handleToggleSync = async (value: boolean) => {
+    if (value) {
+      // Prompt native permission dialog when toggled ON
+      const granted = await requestPermissions();
+      if (granted) {
+        setSyncEnabled(true);
+      } else {
+        setSyncEnabled(false);
+        Alert.alert(
+          'Permissão Necessária',
+          'Não foi possível ativar a sincronização sem as permissões de saúde.'
+        );
+      }
+    } else {
+      // Turn off sync preference directly
+      setSyncEnabled(false);
+    }
+  };
 
   return (
     <View className={`flex-1 ${theme === 'dark' ? 'bg-background' : 'bg-slate-100'}`}>
@@ -88,7 +109,8 @@ export default function WearablesScreen() {
                 </Text>
                 <Switch 
                   value={syncEnabled} 
-                  onValueChange={setSyncEnabled}
+                  onValueChange={handleToggleSync}
+                  disabled={isLoading}
                   trackColor={{ false: theme === 'dark' ? '#334155' : '#CBD5E1', true: '#00E5FF' }}
                   thumbColor="#ffffff"
                 />
@@ -96,6 +118,7 @@ export default function WearablesScreen() {
 
               <TouchableOpacity 
                 onPress={refreshHealthData}
+                disabled={isLoading}
                 style={{ width: '100%', borderRadius: 12, overflow: 'hidden' }}
                 className="w-full shadow-sm" 
                 activeOpacity={0.85}
