@@ -47,6 +47,10 @@ function LayoutContent() {
         options={{ animation: 'none' }}
       />
       <Stack.Screen 
+        name="profile" 
+        options={{ animation: 'none' }}
+      />
+      <Stack.Screen 
         name="wearables" 
         options={{ animation: 'none' }}
       />

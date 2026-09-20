@@ -1,39 +1,67 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, Platform } from 'react-native';
-import { useTheme } from '../../context/ThemeContext';
-import { usePoints } from '../../context/PointsContext';
-import { useAuth } from '../../context/AuthContext';
-import { TopAppBar } from '../../components/TopAppBar';
-import { BottomNav } from '../../components/BottomNav';
+import { useTheme } from '../context/ThemeContext';
+import { usePoints } from '../context/PointsContext';
+import { useAuth } from '../context/AuthContext';
+import { TopAppBar } from '../components/TopAppBar';
+import { BottomNav } from '../components/BottomNav';
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { api } from '../../services/api';
-
+import { api } from '../services/api';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useHealthData } from '../../hooks/useHealthData';
-
-import { StepProgressRing } from '../../components/StepProgressRing';
+import { useHealthData } from '../hooks/useHealthData';
+import { StepProgressRing } from '../components/StepProgressRing';
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
   const { points } = usePoints();
-  const { userEmail } = useAuth();
-  const { steps: healthSteps, isAvailable: isHealthAvailable } = useHealthData();
+  const { userEmail, isLoading } = useAuth();
+  const { steps: healthSteps, isConnected } = useHealthData();
+  const isHealthAvailable = isConnected;
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isLoading && !userEmail) {
+      router.replace('/');
+    }
+  }, [isLoading, userEmail]);
 
   const activeEmail = userEmail || 'test@test.com';
   const displaySteps = isHealthAvailable ? healthSteps : 0;
 
   const [userRank, setUserRank] = useState<number>(4);
-  const userName = activeEmail.split('@')[0];
+  const [userName, setUserName] = useState<string>(activeEmail.split('@')[0]);
 
-  useEffect(() => {
-    const fetchRank = async () => {
-      const { userRank: rank } = await api.getLeaderboard(activeEmail);
-      setUserRank(rank);
-    };
-    fetchRank();
-  }, [activeEmail, points]);
+  useFocusEffect(
+    useCallback(() => {
+      let isMounted = true;
+      const fetchUserData = async () => {
+        try {
+          const profileRes = await api.getProfile(activeEmail);
+          if (isMounted) {
+            if (profileRes.success && profileRes.profile?.name) {
+              setUserName(profileRes.profile.name);
+            } else {
+              setUserName(activeEmail.split('@')[0]);
+            }
+          }
+          const { userRank: rank } = await api.getLeaderboard(activeEmail);
+          if (isMounted) {
+            setUserRank(rank);
+          }
+        } catch (e) {
+          console.error('Error fetching home user data:', e);
+        }
+      };
+      fetchUserData();
+
+      return () => {
+        isMounted = false;
+      };
+    }, [activeEmail, points])
+  );
 
   return (
     <View className={`flex-1 ${theme === 'dark' ? 'bg-background' : 'bg-slate-100'}`}>

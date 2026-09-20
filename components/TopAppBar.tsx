@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, Image, Modal, Share, Alert, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api } from '../services/api';
@@ -37,31 +37,40 @@ export function TopAppBar({ title = "Care Games +", onMenuPress }: TopAppBarProp
   const activeEmail = userEmail || 'test@test.com';
   const [userName, setUserName] = useState<string>(activeEmail.split('@')[0]);
 
-  useEffect(() => {
-    const loadUserData = async () => {
-      try {
-        const photoKey = `@profile_photo_${activeEmail}`;
-        const savedPhoto = await AsyncStorage.getItem(photoKey);
-        if (savedPhoto) setUserPhoto(savedPhoto);
+  useFocusEffect(
+    useCallback(() => {
+      let isMounted = true;
+      const loadUserData = async () => {
+        try {
+          const photoKey = `@profile_photo_${activeEmail}`;
+          const savedPhoto = await AsyncStorage.getItem(photoKey);
+          if (isMounted && savedPhoto) setUserPhoto(savedPhoto);
 
-        const photoRes = await api.getProfilePhoto(activeEmail);
-        if (photoRes.success && photoRes.photoUri) {
-          setUserPhoto(photoRes.photoUri);
+          const photoRes = await api.getProfilePhoto(activeEmail);
+          if (isMounted && photoRes.success && photoRes.photoUri) {
+            setUserPhoto(photoRes.photoUri);
+          }
+
+          const profileRes = await api.getProfile(activeEmail);
+          if (isMounted) {
+            if (profileRes.success && profileRes.profile?.name) {
+              setUserName(profileRes.profile.name);
+            } else if (activeEmail) {
+              setUserName(activeEmail.split('@')[0]);
+            }
+          }
+        } catch (e) {
+          console.error('Error loading top bar profile data:', e);
         }
+      };
 
-        const profileRes = await api.getProfile(activeEmail);
-        if (profileRes.success && profileRes.profile?.name) {
-          setUserName(profileRes.profile.name);
-        } else if (activeEmail) {
-          setUserName(activeEmail.split('@')[0]);
-        }
-      } catch (e) {
-        console.error('Error loading top bar profile data:', e);
-      }
-    };
+      loadUserData();
 
-    loadUserData();
-  }, [activeEmail, menuVisible, userEmail]);
+      return () => {
+        isMounted = false;
+      };
+    }, [activeEmail, menuVisible, userEmail])
+  );
 
   const handleChangePhoto = async () => {
     try {
@@ -227,7 +236,7 @@ export function TopAppBar({ title = "Care Games +", onMenuPress }: TopAppBarProp
             <TouchableOpacity 
               onPress={() => {
                 setMenuVisible(false);
-                router.push('/home/profile');
+                router.push('/profile');
               }}
               className={`flex-row items-center justify-between p-3 rounded-xl mb-2 ${
                 theme === 'dark' ? 'bg-slate-800/60' : 'bg-slate-100'

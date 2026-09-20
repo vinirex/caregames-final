@@ -41,7 +41,7 @@ export function SwipeProvider({ children }: { children: React.ReactNode }) {
 
   const navigateToNext = () => {
     if (currentTabIndex >= 0 && currentTabIndex < MAIN_TAB_ROUTES.length - 1) {
-      router.push(MAIN_TAB_ROUTES[currentTabIndex + 1]);
+      router.replace(MAIN_TAB_ROUTES[currentTabIndex + 1]);
       return true;
     }
     return false;
@@ -49,7 +49,7 @@ export function SwipeProvider({ children }: { children: React.ReactNode }) {
 
   const navigateToPrev = () => {
     if (currentTabIndex > 0) {
-      router.push(MAIN_TAB_ROUTES[currentTabIndex - 1]);
+      router.replace(MAIN_TAB_ROUTES[currentTabIndex - 1]);
       return true;
     }
     return false;
@@ -60,15 +60,15 @@ export function SwipeProvider({ children }: { children: React.ReactNode }) {
       const { translationX, translationY, velocityX } = event.nativeEvent;
 
       // Check that horizontal movement dominates vertical scrolling
-      const isHorizontalDrag = Math.abs(translationX) > Math.abs(translationY) * 1.25;
+      const isHorizontalDrag = Math.abs(translationX) > Math.abs(translationY) * 1.1;
 
       if (isHorizontalDrag) {
         // Swipe Left (finger moves left, translationX < 0) -> Next Tab
-        if (translationX < -50 || velocityX < -400) {
+        if (translationX < -35 || velocityX < -300) {
           navigateToNext();
         }
         // Swipe Right (finger moves right, translationX > 0) -> Previous Tab
-        else if (translationX > 50 || velocityX > 400) {
+        else if (translationX > 35 || velocityX > 300) {
           navigateToPrev();
         }
       }
@@ -90,8 +90,8 @@ export function SwipeProvider({ children }: { children: React.ReactNode }) {
       {isSwipeEnabled && isMainTab ? (
         <PanGestureHandler
           onHandlerStateChange={handleGestureStateChange}
-          activeOffsetX={[-25, 25]}
-          failOffsetY={[-35, 35]}
+          activeOffsetX={[-15, 15]}
+          failOffsetY={[-25, 25]}
         >
           <View style={{ flex: 1 }}>{children}</View>
         </PanGestureHandler>

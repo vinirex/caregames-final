@@ -26,12 +26,12 @@ export function BottomNav() {
       }`}
     >
       {tabs.map((tab) => {
-        const isActive = pathname.includes(tab.name) || (tab.name === 'home' && pathname === '/home');
+        const isActive = pathname === `/${tab.name}` || (tab.name === 'home' && (pathname === '/' || pathname === '/home'));
         
         return (
           <TouchableOpacity 
             key={tab.name}
-            onPress={() => router.push(`/${tab.name}`)}
+            onPress={() => router.replace(`/${tab.name}` as any)}
             style={{ minHeight: 44 }}
             className={`flex-1 flex-col items-center justify-center py-1 mx-0.5 rounded-xl ${
               isActive 

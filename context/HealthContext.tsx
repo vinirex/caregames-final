@@ -24,7 +24,7 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
   const [steps, setSteps] = useState<number>(0);
   const [heartRate, setHeartRate] = useState<number | null>(null);
   const [isAvailable, setIsAvailable] = useState<boolean>(false);
-  const [syncEnabled, setSyncEnabledState] = useState<boolean>(true);
+  const [syncEnabled, setSyncEnabledState] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [lastSyncTime, setLastSyncTime] = useState<string>('Agora mesmo');
@@ -36,6 +36,8 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
         const savedSync = await AsyncStorage.getItem(SYNC_STORAGE_KEY);
         if (savedSync !== null) {
           setSyncEnabledState(JSON.parse(savedSync));
+        } else {
+          setSyncEnabledState(false);
         }
       } catch (e) {
         console.error('Error loading wearable sync preference:', e);
@@ -248,73 +250,98 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
 
       if (HealthConnect.readRecords) {
         try {
+          console.log('[HealthConnect] Querying HeartRate from:', twentyFourHoursAgo.toISOString(), 'to:', now.toISOString());
           const hrResponse = await HealthConnect.readRecords('HeartRate', {
             timeRangeFilter: {
               operator: 'between',
               startTime: twentyFourHoursAgo.toISOString(),
               endTime: now.toISOString(),
             },
+            pageSize: 5,
             ascendingOrder: false,
           });
 
-          if (hrResponse?.records && Array.isArray(hrResponse.records) && hrResponse.records.length > 0) {
-            let allSamples: any[] = [];
-            hrResponse.records.forEach((record: any) => {
-              if (Array.isArray(record.samples) && record.samples.length > 0) {
-                allSamples.push(...record.samples);
-              } else if (record.beatsPerMinute || record.value) {
-                allSamples.push(record);
+          const records = hrResponse?.records || [];
+          console.log(`[HealthConnect] HeartRate records returned: ${records.length}`);
+
+          let allSamples: any[] = [];
+          records.forEach((record: any) => {
+            if (Array.isArray(record.samples) && record.samples.length > 0) {
+              allSamples.push(...record.samples);
+            } else if (record.beatsPerMinute || record.value) {
+              allSamples.push(record);
+            }
+          });
+
+          console.log(`[HealthConnect] HeartRate samples found: ${allSamples.length}`);
+
+          if (allSamples.length > 0) {
+            let latestSample: any = null;
+            let latestTimestamp = -1;
+
+            allSamples.forEach((sample: any) => {
+              const rawTime = sample.time || sample.startTime || sample.endTime;
+              const timeMs = rawTime ? new Date(rawTime).getTime() : 0;
+              if (timeMs > latestTimestamp) {
+                latestTimestamp = timeMs;
+                latestSample = sample;
               }
             });
 
-            if (allSamples.length > 0) {
-              allSamples.sort((a, b) => {
-                const timeA = new Date(a.time || a.startTime || a.endTime || 0).getTime();
-                const timeB = new Date(b.time || b.startTime || b.endTime || 0).getTime();
-                return timeB - timeA;
-              });
-
-              const latestSample = allSamples[0];
-              const rawBpm = latestSample?.beatsPerMinute ?? latestSample?.value?.beatsPerMinute ?? latestSample?.value;
-              if (rawBpm && !isNaN(rawBpm)) {
+            if (latestSample) {
+              const rawBpm = latestSample.beatsPerMinute ?? latestSample.value?.beatsPerMinute ?? latestSample.value;
+              if (rawBpm !== undefined && rawBpm !== null && !isNaN(Number(rawBpm))) {
                 foundBpm = Math.round(Number(rawBpm));
               }
             }
           }
         } catch (hrErr) {
-          console.warn('HealthConnect readRecords HeartRate warning:', hrErr);
+          console.warn('[HealthConnect] readRecords HeartRate warning:', hrErr);
         }
 
-        if (!foundBpm) {
+        if (foundBpm === null) {
           try {
+            console.log('[HealthConnect] No continuous HeartRate samples found. Querying RestingHeartRate...');
             const rhrResponse = await HealthConnect.readRecords('RestingHeartRate', {
               timeRangeFilter: {
                 operator: 'between',
                 startTime: twentyFourHoursAgo.toISOString(),
                 endTime: now.toISOString(),
               },
+              pageSize: 5,
               ascendingOrder: false,
             });
 
-            if (rhrResponse?.records && Array.isArray(rhrResponse.records) && rhrResponse.records.length > 0) {
-              const sortedRecords = [...rhrResponse.records].sort((a, b) => {
-                const timeA = new Date(a.time || a.startTime || a.endTime || 0).getTime();
-                const timeB = new Date(b.time || b.startTime || b.endTime || 0).getTime();
-                return timeB - timeA;
+            const rhrRecords = rhrResponse?.records || [];
+            console.log(`[HealthConnect] RestingHeartRate records returned: ${rhrRecords.length}`);
+
+            if (rhrRecords.length > 0) {
+              let latestRecord: any = null;
+              let latestTimestamp = -1;
+
+              rhrRecords.forEach((record: any) => {
+                const rawTime = record.time || record.startTime || record.endTime;
+                const timeMs = rawTime ? new Date(rawTime).getTime() : 0;
+                if (timeMs > latestTimestamp) {
+                  latestTimestamp = timeMs;
+                  latestRecord = record;
+                }
               });
 
-              const latestRecord = sortedRecords[0];
-              const bpm = latestRecord?.beatsPerMinute ?? latestRecord?.value?.beatsPerMinute ?? latestRecord?.value ?? null;
-              if (bpm && !isNaN(bpm)) {
-                foundBpm = Math.round(Number(bpm));
+              if (latestRecord) {
+                const bpm = latestRecord.beatsPerMinute ?? latestRecord.value?.beatsPerMinute ?? latestRecord.value ?? null;
+                if (bpm !== undefined && bpm !== null && !isNaN(Number(bpm))) {
+                  foundBpm = Math.round(Number(bpm));
+                }
               }
             }
           } catch (rhrErr) {
-            console.warn('HealthConnect readRecords RestingHeartRate warning:', rhrErr);
+            console.warn('[HealthConnect] readRecords RestingHeartRate warning:', rhrErr);
           }
         }
       }
 
+      console.log(`[HealthConnect] Final Resolved BPM: ${foundBpm}`);
       setHeartRate(foundBpm);
 
       const syncTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });

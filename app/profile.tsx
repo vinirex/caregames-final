@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Text, View, Image, TextInput, ScrollView, TouchableOpacity, Alert, useWindowDimensions } from 'react-native';
-import { useTheme } from '../../context/ThemeContext';
-import { Link, useRouter } from 'expo-router';
-import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
+import { useRouter } from 'expo-router';
+import { useAuth } from '../context/AuthContext';
 import { FontAwesome } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { api } from '../../services/api';
+import { api } from '../services/api';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNotifications } from '../context/NotificationContext';
 
 // Helper component for editable fields
 const EditableField = ({ label, value, onChangeText, placeholder, keyboardType = 'default' }: { label: string; value: string; onChangeText: (text: string) => void; placeholder: string; keyboardType?: 'default' | 'numeric' | 'email-address' | 'ascii-capable' | 'numbers-and-punctuation' | 'url' | 'number-pad' | 'phone-pad' | 'name-phone-pad' | 'decimal-pad' | 'twitter' | 'web-search' | 'visible-password'; }) => {
@@ -25,9 +27,6 @@ const EditableField = ({ label, value, onChangeText, placeholder, keyboardType =
     </View>
   );
 };
-
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNotifications } from '../../context/NotificationContext';
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
@@ -93,8 +92,7 @@ export default function ProfileScreen() {
       }
     };
 
-    const timer = setTimeout(saveProfile, 1000); // 1s debounce
-    return () => clearTimeout(timer);
+    saveProfile();
   }, [name, birthday, address, isLoaded, userEmail]);
 
   const pickProfilePhoto = async () => {

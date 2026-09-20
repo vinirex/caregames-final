@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, Image, TouchableOpacity } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../context/ThemeContext';
@@ -9,6 +9,7 @@ import { BottomNav } from '../components/BottomNav';
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { api, LeaderboardUser } from '../services/api';
+import { useFocusEffect } from 'expo-router';
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -25,27 +26,36 @@ export default function RankingsScreen() {
   const [userRank, setUserRank] = useState<number>(4);
   const [userPhoto, setUserPhoto] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchRankings = async () => {
-      const { leaderboard: list, userRank: rank } = await api.getLeaderboard(activeEmail);
-      setLeaderboard(list);
-      setUserRank(rank);
-
-      try {
-        const photoKey = `@profile_photo_${activeEmail}`;
-        const savedPhoto = await AsyncStorage.getItem(photoKey);
-        if (savedPhoto) setUserPhoto(savedPhoto);
-
-        const photoRes = await api.getProfilePhoto(activeEmail);
-        if (photoRes.success && photoRes.photoUri) {
-          setUserPhoto(photoRes.photoUri);
+  useFocusEffect(
+    useCallback(() => {
+      let isMounted = true;
+      const fetchRankings = async () => {
+        const { leaderboard: list, userRank: rank } = await api.getLeaderboard(activeEmail);
+        if (isMounted) {
+          setLeaderboard(list);
+          setUserRank(rank);
         }
-      } catch (e) {
-        console.error('Error loading ranking user photo:', e);
-      }
-    };
-    fetchRankings();
-  }, [activeEmail, points]);
+
+        try {
+          const photoKey = `@profile_photo_${activeEmail}`;
+          const savedPhoto = await AsyncStorage.getItem(photoKey);
+          if (isMounted && savedPhoto) setUserPhoto(savedPhoto);
+
+          const photoRes = await api.getProfilePhoto(activeEmail);
+          if (isMounted && photoRes.success && photoRes.photoUri) {
+            setUserPhoto(photoRes.photoUri);
+          }
+        } catch (e) {
+          console.error('Error loading ranking user photo:', e);
+        }
+      };
+      fetchRankings();
+
+      return () => {
+        isMounted = false;
+      };
+    }, [activeEmail, points])
+  );
 
   return (
     <View className={`flex-1 ${theme === 'dark' ? 'bg-background' : 'bg-slate-100'}`}>
