@@ -248,7 +248,7 @@ O projeto inclui toda a orquestração via Docker (`Dockerfile` e `docker-compos
 Pronto! Isso fará com que:
 * O banco de dados PostgreSQL suba.
 * O contêiner da aplicação Go rode as *migrations* (criando todo o schema de tabelas).
-* A API ficará disponível em **`http://localhost:8080`**.
+* A API ficará disponível em **`http://localhost:8081`**.
 
 Para derrubar e limpar a infraestrutura:
 ```sh
@@ -260,7 +260,7 @@ docker-compose down
 O projeto conta com a documentação automática de todos os endpoints usando o Swagger UI.
 
 Com a API rodando, acesse em seu navegador:
-**`http://localhost:8080/swagger/index.html`**
+**`http://localhost:8081/swagger/index.html`**
 
 Lá você encontrará os modelos, rotas (Auth, Desafios, Saúde, Benefícios, etc) e poderá testá-los diretamente pela interface.
 
