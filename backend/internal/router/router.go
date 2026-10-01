@@ -26,6 +26,7 @@ func Setup(db *sqlx.DB) *gin.Engine {
 	notifRepo     := repositories.NewNotificationRepository(db)
 	groupRepo     := repositories.NewGroupRepository(db)
 	rankingRepo   := repositories.NewRankingRepository(db)
+	seasonRepo    := repositories.NewSeasonRepository(db)
 
 	// ── Services ────────────────────────────────────────────────
 	authSvc      := services.NewAuthService(userRepo)
@@ -37,6 +38,7 @@ func Setup(db *sqlx.DB) *gin.Engine {
 	notifSvc     := services.NewNotificationService(notifRepo)
 	groupSvc     := services.NewGroupService(groupRepo)
 	rankingSvc   := services.NewRankingService(rankingRepo)
+	seasonSvc    := services.NewSeasonService(seasonRepo)
 
 	// ── Handlers ────────────────────────────────────────────────
 	authH      := handlers.NewAuthHandler(authSvc)
@@ -48,6 +50,7 @@ func Setup(db *sqlx.DB) *gin.Engine {
 	notifH     := handlers.NewNotificationHandler(notifSvc)
 	groupH     := handlers.NewGroupHandler(groupSvc)
 	rankingH   := handlers.NewRankingHandler(rankingSvc)
+	seasonH    := handlers.NewSeasonHandler(seasonSvc)
 
 	// ── Auth middleware ──────────────────────────────────────────
 	authMiddleware := middleware.Auth(userRepo)
@@ -149,6 +152,18 @@ func Setup(db *sqlx.DB) *gin.Engine {
 		rankings.GET("/global", rankingH.GetGlobalRanking)
 		rankings.POST("/global/opt-in", rankingH.OptIn)
 		rankings.POST("/global/opt-out", rankingH.OptOut)
+	}
+
+	// Seasons (admin protected in a real app, just protected for now)
+	seasons := protected.Group("/seasons")
+	{
+		seasons.GET("", seasonH.ListSeasons)
+		seasons.GET("/active", seasonH.GetActiveSeason)
+		seasons.GET("/:id", seasonH.GetSeason)
+		seasons.POST("", seasonH.CreateSeason)
+		seasons.PUT("/:id", seasonH.UpdateSeason)
+		seasons.DELETE("/:id", seasonH.DeleteSeason)
+		seasons.POST("/:id/activate", seasonH.ActivateSeason)
 	}
 
 	return r
