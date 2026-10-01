@@ -68,3 +68,48 @@ func (s *ChallengeService) AcceptChallenge(userID, challengeID string) error {
 
 	return nil
 }
+
+// UpdateProgress updates the value of an ongoing challenge.
+func (s *ChallengeService) UpdateProgress(userID, challengeID string, value float64) error {
+	if err := s.repo.UpdateProgress(userID, challengeID, value); err != nil {
+		return fmt.Errorf("challenge_service.UpdateProgress: %w", err)
+	}
+	return nil
+}
+
+// CompleteChallenge marks a challenge as completed and awards points.
+// Note: In a real system you'd use a DB transaction across these operations.
+func (s *ChallengeService) CompleteChallenge(userID, challengeID string, pointsSvc *PointsService) (int, error) {
+	c, err := s.repo.GetByID(challengeID)
+	if err != nil {
+		return 0, fmt.Errorf("challenge_service.CompleteChallenge: fetch: %w", err)
+	}
+	if c == nil {
+		return 0, fmt.Errorf("not_found: challenge not found")
+	}
+
+	prog, err := s.repo.GetUserProgress(userID, challengeID)
+	if err != nil {
+		return 0, fmt.Errorf("challenge_service.CompleteChallenge: check progress: %w", err)
+	}
+	if prog == nil || prog.Status != "in_progress" {
+		return 0, fmt.Errorf("bad_request: challenge not in progress")
+	}
+
+	// For simplicity, we assume the client ensures target is met, or we can check here:
+	if prog.CurrentValue < c.TargetValue {
+		return 0, fmt.Errorf("bad_request: target not reached yet")
+	}
+
+	if err := s.repo.UpdateStatus(userID, challengeID, c.PointsReward); err != nil {
+		return 0, fmt.Errorf("challenge_service.CompleteChallenge: status update: %w", err)
+	}
+
+	// Award points
+	desc := fmt.Sprintf("Conclusão do desafio: %s", c.Title)
+	if _, err := pointsSvc.AddPoints(userID, c.PointsReward, desc, challengeID, "challenge"); err != nil {
+		return 0, fmt.Errorf("challenge_service.CompleteChallenge: award points: %w", err)
+	}
+
+	return c.PointsReward, nil
+}

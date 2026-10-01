@@ -32,7 +32,7 @@ func Setup(db *sqlx.DB) *gin.Engine {
 	authH      := handlers.NewAuthHandler(authSvc)
 	profileH   := handlers.NewProfileHandler(profileSvc)
 	pointsH    := handlers.NewPointsHandler(pointsSvc)
-	challengeH := handlers.NewChallengeHandler(challengeSvc)
+	challengeH := handlers.NewChallengeHandler(challengeSvc, pointsSvc)
 
 	// ── Auth middleware ──────────────────────────────────────────
 	authMiddleware := middleware.Auth(userRepo)
@@ -86,6 +86,8 @@ func Setup(db *sqlx.DB) *gin.Engine {
 	{
 		challenges.GET("", challengeH.ListActive)
 		challenges.POST("/:id/accept", challengeH.AcceptChallenge)
+		challenges.PUT("/:id/progress", challengeH.UpdateProgress)
+		challenges.POST("/:id/complete", challengeH.CompleteChallenge)
 	}
 
 	return r

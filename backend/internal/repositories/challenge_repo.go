@@ -87,3 +87,45 @@ func (r *ChallengeRepository) CreateProgress(userID, challengeID string) error {
 	}
 	return nil
 }
+
+// UpdateProgress updates the current_value of a challenge.
+func (r *ChallengeRepository) UpdateProgress(userID, challengeID string, value float64) error {
+	query := `
+		UPDATE user_challenge_progress
+		SET current_value = $1, updated_at = NOW()
+		WHERE user_id = $2 AND challenge_id = $3 AND status = 'in_progress'
+	`
+	res, err := r.db.Exec(query, value, userID, challengeID)
+	if err != nil {
+		return fmt.Errorf("challenge_repo.UpdateProgress: %w", err)
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return fmt.Errorf("not_found: progress record not found or not in_progress")
+	}
+	return nil
+}
+
+// UpdateStatus completes a challenge.
+func (r *ChallengeRepository) UpdateStatus(userID, challengeID string, points int) error {
+	query := `
+		UPDATE user_challenge_progress
+		SET status = 'completed', completed_at = NOW(), points_awarded = $1, updated_at = NOW()
+		WHERE user_id = $2 AND challenge_id = $3 AND status = 'in_progress'
+	`
+	res, err := r.db.Exec(query, points, userID, challengeID)
+	if err != nil {
+		return fmt.Errorf("challenge_repo.UpdateStatus: %w", err)
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return fmt.Errorf("not_found: progress record not found or already completed")
+	}
+	return nil
+}
