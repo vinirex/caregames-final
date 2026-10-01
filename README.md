@@ -235,14 +235,21 @@ O projeto conta com rotinas automáticas de **CI/CD** usando **GitHub Actions** 
 
 O projeto inclui toda a orquestração via Docker (`Dockerfile` e `docker-compose.yml`). É possível subir a API e o Banco de Dados com apenas um comando, sem necessidade de instalar o Go nativamente.
 
-1. Acesse o diretório do backend:
+1. Acesse o diretório do backend e copie as variáveis de ambiente:
    ```sh
    cd backend
+   cp .env.example .env
    ```
 
-2. Execute o Docker Compose:
+2. **Opcional (Seeding):** Caso queira popular o banco de dados com desafios e benefícios iniciais (para facilitar o teste do App), abra o arquivo `.env` gerado no passo acima e ative o `RUN_SEED`:
+   ```env
+   RUN_SEED=true
+   ```
+   *(Você pode mudar para `false` futuramente para desativar a auto-população a cada restart).*
+
+3. Execute o Docker Compose:
    ```sh
-   docker-compose up -d
+   docker-compose up -d --build
    ```
 
 Pronto! Isso fará com que:

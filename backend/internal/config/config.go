@@ -28,6 +28,8 @@ type Config struct {
 
 	// CORS
 	AllowedOrigins string
+	// Seed
+	RunSeed bool
 }
 
 // Load reads configuration from a .env file (if present) and environment variables.
@@ -53,6 +55,9 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("config: invalid BCRYPT_COST: %w", err)
 	}
 	cfg.BcryptCost = cost
+
+	runSeed, _ := strconv.ParseBool(getEnv("RUN_SEED", "false"))
+	cfg.RunSeed = runSeed
 
 	return cfg, nil
 }

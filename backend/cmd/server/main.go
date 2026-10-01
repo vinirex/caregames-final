@@ -45,6 +45,12 @@ func main() {
 		log.Fatalf("Migration failed: %v", err)
 	}
 
+	if cfg.RunSeed {
+		if err := database.Seed(db); err != nil {
+			log.Fatalf("Seeding failed: %v", err)
+		}
+	}
+
 	r := router.Setup(db)
 
 	addr := fmt.Sprintf(":%s", cfg.Port)
