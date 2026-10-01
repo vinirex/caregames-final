@@ -126,6 +126,13 @@ func truncateAll(db *sqlx.DB) error {
 		ON CONFLICT (slug) DO NOTHING;
 	`)
 
+	// Seed benefits
+	db.Exec(`
+		INSERT INTO benefits (title, description, points_cost, stock, is_active)
+		SELECT 'Voucher R$50 Ifood', 'Voucher de desconto', 50, 100, TRUE
+		WHERE NOT EXISTS (SELECT 1 FROM benefits WHERE title = 'Voucher R$50 Ifood');
+	`)
+
 	return err
 }
 
