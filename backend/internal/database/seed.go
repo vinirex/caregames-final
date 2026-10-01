@@ -3,6 +3,7 @@ package database
 import (
 	"log"
 
+	"github.com/caregames/api/pkg/crypto"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -36,9 +37,97 @@ func Seed(db *sqlx.DB) error {
 		return err
 	}
 
-	// Optionally seed an admin user here if needed, but for security, usually it's better not to seed passwords.
-	// For now, these basic objects populate the platform catalog.
+	// Password for mocks
+	hash, err := crypto.HashPassword("SenhaSegura123!")
+	if err != nil {
+		return err
+	}
 
-	log.Println("✅ Database seeded successfully.")
+	// Seed Users (Admin + Normal Users)
+	usersQuery := `
+		INSERT INTO users (id, email, password_hash, role)
+		VALUES 
+		('u1000000-0000-0000-0000-000000000001', 'admin@caregames.com', $1, 'admin'),
+		('u2000000-0000-0000-0000-000000000002', 'joao.silva@teste.com', $1, 'user'),
+		('u3000000-0000-0000-0000-000000000003', 'maria.souza@teste.com', $1, 'user')
+		ON CONFLICT (email) DO NOTHING;
+	`
+	if _, err := db.Exec(usersQuery, hash); err != nil {
+		return err
+	}
+
+	// Seed User Profiles
+	profilesQuery := `
+		INSERT INTO user_profiles (user_id, name, theme_preference)
+		VALUES 
+		('u1000000-0000-0000-0000-000000000001', 'Admin CareGames', 'system'),
+		('u2000000-0000-0000-0000-000000000002', 'João Silva', 'light'),
+		('u3000000-0000-0000-0000-000000000003', 'Maria Souza', 'dark')
+		ON CONFLICT (user_id) DO NOTHING;
+	`
+	if _, err := db.Exec(profilesQuery); err != nil {
+		return err
+	}
+
+	// Seed User Points
+	pointsQuery := `
+		INSERT INTO user_points (user_id, balance, lifetime_earned)
+		VALUES 
+		('u1000000-0000-0000-0000-000000000001', 9999, 9999),
+		('u2000000-0000-0000-0000-000000000002', 1500, 1500),
+		('u3000000-0000-0000-0000-000000000003', 300, 300)
+		ON CONFLICT (user_id) DO NOTHING;
+	`
+	if _, err := db.Exec(pointsQuery); err != nil {
+		return err
+	}
+
+	// Seed Groups
+	groupsQuery := `
+		INSERT INTO groups (id, name, description, owner_id, invite_code, is_public, max_members)
+		VALUES 
+		('g1000000-0000-0000-0000-000000000001', 'Esquadrão Saúde FIAP', 'Grupo dos alunos super saudáveis', 'u2000000-0000-0000-0000-000000000002', 'FIAPSAUDE', true, 50)
+		ON CONFLICT (invite_code) DO NOTHING;
+	`
+	if _, err := db.Exec(groupsQuery); err != nil {
+		return err
+	}
+
+	// Seed Group Members
+	groupMembersQuery := `
+		INSERT INTO group_members (group_id, user_id, role)
+		VALUES 
+		('g1000000-0000-0000-0000-000000000001', 'u2000000-0000-0000-0000-000000000002', 'owner'),
+		('g1000000-0000-0000-0000-000000000001', 'u3000000-0000-0000-0000-000000000003', 'member')
+		ON CONFLICT (group_id, user_id) DO NOTHING;
+	`
+	if _, err := db.Exec(groupMembersQuery); err != nil {
+		return err
+	}
+
+	// Seed Season
+	seasonsQuery := `
+		INSERT INTO seasons (id, title, description, start_date, end_date, is_active)
+		VALUES 
+		('s1000000-0000-0000-0000-000000000001', 'Temporada de Verão 2026', 'A primeira temporada do CareGames+', NOW(), NOW() + INTERVAL '90 days', true)
+		ON CONFLICT DO NOTHING;
+	`
+	if _, err := db.Exec(seasonsQuery); err != nil {
+		return err
+	}
+
+	// Seed Season Rankings (opt-in for users)
+	seasonRankingsQuery := `
+		INSERT INTO season_rankings (season_id, user_id, opt_in)
+		VALUES 
+		('s1000000-0000-0000-0000-000000000001', 'u2000000-0000-0000-0000-000000000002', true),
+		('s1000000-0000-0000-0000-000000000001', 'u3000000-0000-0000-0000-000000000003', true)
+		ON CONFLICT (season_id, user_id) DO NOTHING;
+	`
+	if _, err := db.Exec(seasonRankingsQuery); err != nil {
+		return err
+	}
+
+	log.Println("✅ Database seeded successfully with full mocks.")
 	return nil
 }
