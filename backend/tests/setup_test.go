@@ -114,7 +114,18 @@ func truncateAll(db *sqlx.DB) error {
 			health_sync_records, user_devices, benefit_redemptions, benefits,
 			user_challenge_progress, point_transactions, user_points,
 			user_profiles, user_api_keys, users
-		RESTART IDENTITY CASCADE`)
+		CASCADE`)
+	
+	// Ensure seeded challenges exist (in case they were wiped out or missing)
+	db.Exec(`
+		INSERT INTO challenges (slug, title, description, icon_name, type, metric, target_value, target_unit, points_reward, is_active, is_fixed)
+		VALUES
+			('steps_10k',      '10.000 passos por dia',  'Alcance sua meta diária de passos para melhorar a saúde cardiovascular.', 'directions-walk',  'daily', 'steps',         10000, 'steps',   100, TRUE, TRUE),
+			('water_2l',       'Beber 2L de Água',        'Mantenha-se hidratado ao longo do dia. Registre seu consumo diário.',     'water-drop',       'daily', 'water_ml',       2000, 'ml',       50, TRUE, TRUE),
+			('meditation_15m', '15 min de Meditação',     'Concentre sua mente com uma sessão diária de meditação guiada.',          'self-improvement', 'daily', 'meditation_min',   15, 'minutes',  75, TRUE, TRUE)
+		ON CONFLICT (slug) DO NOTHING;
+	`)
+
 	return err
 }
 

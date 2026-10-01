@@ -18,18 +18,21 @@ func Setup(db *sqlx.DB) *gin.Engine {
 	r.Use(cors.Default()) // allow all origins; restrict in production via config
 
 	// ── Repositories ────────────────────────────────────────────
-	userRepo   := repositories.NewUserRepository(db)
-	pointsRepo := repositories.NewPointsRepository(db)
+	userRepo      := repositories.NewUserRepository(db)
+	pointsRepo    := repositories.NewPointsRepository(db)
+	challengeRepo := repositories.NewChallengeRepository(db)
 
 	// ── Services ────────────────────────────────────────────────
-	authSvc    := services.NewAuthService(userRepo)
-	profileSvc := services.NewProfileService(userRepo)
-	pointsSvc  := services.NewPointsService(pointsRepo, userRepo)
+	authSvc      := services.NewAuthService(userRepo)
+	profileSvc   := services.NewProfileService(userRepo)
+	pointsSvc    := services.NewPointsService(pointsRepo, userRepo)
+	challengeSvc := services.NewChallengeService(challengeRepo)
 
 	// ── Handlers ────────────────────────────────────────────────
-	authH    := handlers.NewAuthHandler(authSvc)
-	profileH := handlers.NewProfileHandler(profileSvc)
-	pointsH  := handlers.NewPointsHandler(pointsSvc)
+	authH      := handlers.NewAuthHandler(authSvc)
+	profileH   := handlers.NewProfileHandler(profileSvc)
+	pointsH    := handlers.NewPointsHandler(pointsSvc)
+	challengeH := handlers.NewChallengeHandler(challengeSvc)
 
 	// ── Auth middleware ──────────────────────────────────────────
 	authMiddleware := middleware.Auth(userRepo)
@@ -76,6 +79,13 @@ func Setup(db *sqlx.DB) *gin.Engine {
 		points.POST("/spend",  pointsH.SpendPoints)
 		// Admin only
 		points.POST("/add", middleware.RequireAdmin(), pointsH.AddPoints)
+	}
+
+	// Challenges
+	challenges := protected.Group("/challenges")
+	{
+		challenges.GET("", challengeH.ListActive)
+		challenges.POST("/:id/accept", challengeH.AcceptChallenge)
 	}
 
 	return r
