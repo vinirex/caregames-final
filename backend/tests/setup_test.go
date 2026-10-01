@@ -92,7 +92,7 @@ func parseBody(t *testing.T, w *httptest.ResponseRecorder, v interface{}) {
 // testDSN returns the test database DSN from environment variables or defaults.
 func testDSN() string {
 	host := envOr("TEST_DB_HOST", "localhost")
-	port := envOr("TEST_DB_PORT", "5433")
+	port := envOr("TEST_DB_PORT", "5434")
 	name := envOr("TEST_DB_NAME", "caregames_test")
 	user := envOr("TEST_DB_USER", "caregames")
 	pass := envOr("TEST_DB_PASSWORD", "caregames_secret")
