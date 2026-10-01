@@ -25,6 +25,7 @@ func Setup(db *sqlx.DB) *gin.Engine {
 	healthRepo    := repositories.NewHealthRepository(db)
 	notifRepo     := repositories.NewNotificationRepository(db)
 	groupRepo     := repositories.NewGroupRepository(db)
+	rankingRepo   := repositories.NewRankingRepository(db)
 
 	// ── Services ────────────────────────────────────────────────
 	authSvc      := services.NewAuthService(userRepo)
@@ -35,6 +36,7 @@ func Setup(db *sqlx.DB) *gin.Engine {
 	healthSvc    := services.NewHealthService(healthRepo, challengeSvc)
 	notifSvc     := services.NewNotificationService(notifRepo)
 	groupSvc     := services.NewGroupService(groupRepo)
+	rankingSvc   := services.NewRankingService(rankingRepo)
 
 	// ── Handlers ────────────────────────────────────────────────
 	authH      := handlers.NewAuthHandler(authSvc)
@@ -45,6 +47,7 @@ func Setup(db *sqlx.DB) *gin.Engine {
 	healthH    := handlers.NewHealthHandler(healthSvc)
 	notifH     := handlers.NewNotificationHandler(notifSvc)
 	groupH     := handlers.NewGroupHandler(groupSvc)
+	rankingH   := handlers.NewRankingHandler(rankingSvc)
 
 	// ── Auth middleware ──────────────────────────────────────────
 	authMiddleware := middleware.Auth(userRepo)
@@ -138,6 +141,14 @@ func Setup(db *sqlx.DB) *gin.Engine {
 		groups.POST("/join", groupH.JoinGroup)
 		groups.GET("/:id/ranking", groupH.GetRanking)
 		groups.POST("/:id/leave", groupH.LeaveGroup)
+	}
+
+	// Rankings
+	rankings := protected.Group("/rankings")
+	{
+		rankings.GET("/global", rankingH.GetGlobalRanking)
+		rankings.POST("/global/opt-in", rankingH.OptIn)
+		rankings.POST("/global/opt-out", rankingH.OptOut)
 	}
 
 	return r
