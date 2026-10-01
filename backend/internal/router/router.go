@@ -21,18 +21,21 @@ func Setup(db *sqlx.DB) *gin.Engine {
 	userRepo      := repositories.NewUserRepository(db)
 	pointsRepo    := repositories.NewPointsRepository(db)
 	challengeRepo := repositories.NewChallengeRepository(db)
+	benefitRepo   := repositories.NewBenefitRepository(db)
 
 	// ── Services ────────────────────────────────────────────────
 	authSvc      := services.NewAuthService(userRepo)
 	profileSvc   := services.NewProfileService(userRepo)
 	pointsSvc    := services.NewPointsService(pointsRepo, userRepo)
 	challengeSvc := services.NewChallengeService(challengeRepo)
+	benefitSvc   := services.NewBenefitService(benefitRepo, pointsSvc)
 
 	// ── Handlers ────────────────────────────────────────────────
 	authH      := handlers.NewAuthHandler(authSvc)
 	profileH   := handlers.NewProfileHandler(profileSvc)
 	pointsH    := handlers.NewPointsHandler(pointsSvc)
 	challengeH := handlers.NewChallengeHandler(challengeSvc, pointsSvc)
+	benefitH   := handlers.NewBenefitHandler(benefitSvc)
 
 	// ── Auth middleware ──────────────────────────────────────────
 	authMiddleware := middleware.Auth(userRepo)
@@ -88,6 +91,15 @@ func Setup(db *sqlx.DB) *gin.Engine {
 		challenges.POST("/:id/accept", challengeH.AcceptChallenge)
 		challenges.PUT("/:id/progress", challengeH.UpdateProgress)
 		challenges.POST("/:id/complete", challengeH.CompleteChallenge)
+	}
+
+	// Benefits
+	benefits := protected.Group("/benefits")
+	{
+		benefits.GET("", benefitH.ListActive)
+		benefits.GET("/:id", benefitH.GetByID)
+		benefits.POST("/:id/redeem", benefitH.RedeemBenefit)
+		benefits.GET("/redemptions", benefitH.ListRedemptions)
 	}
 
 	return r
