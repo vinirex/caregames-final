@@ -22,6 +22,7 @@ func Setup(db *sqlx.DB) *gin.Engine {
 	pointsRepo    := repositories.NewPointsRepository(db)
 	challengeRepo := repositories.NewChallengeRepository(db)
 	benefitRepo   := repositories.NewBenefitRepository(db)
+	healthRepo    := repositories.NewHealthRepository(db)
 
 	// ── Services ────────────────────────────────────────────────
 	authSvc      := services.NewAuthService(userRepo)
@@ -29,6 +30,7 @@ func Setup(db *sqlx.DB) *gin.Engine {
 	pointsSvc    := services.NewPointsService(pointsRepo, userRepo)
 	challengeSvc := services.NewChallengeService(challengeRepo)
 	benefitSvc   := services.NewBenefitService(benefitRepo, pointsSvc)
+	healthSvc    := services.NewHealthService(healthRepo, challengeSvc)
 
 	// ── Handlers ────────────────────────────────────────────────
 	authH      := handlers.NewAuthHandler(authSvc)
@@ -36,6 +38,7 @@ func Setup(db *sqlx.DB) *gin.Engine {
 	pointsH    := handlers.NewPointsHandler(pointsSvc)
 	challengeH := handlers.NewChallengeHandler(challengeSvc, pointsSvc)
 	benefitH   := handlers.NewBenefitHandler(benefitSvc)
+	healthH    := handlers.NewHealthHandler(healthSvc)
 
 	// ── Auth middleware ──────────────────────────────────────────
 	authMiddleware := middleware.Auth(userRepo)
@@ -100,6 +103,14 @@ func Setup(db *sqlx.DB) *gin.Engine {
 		benefits.GET("/:id", benefitH.GetByID)
 		benefits.POST("/:id/redeem", benefitH.RedeemBenefit)
 		benefits.GET("/redemptions", benefitH.ListRedemptions)
+	}
+
+	// Health
+	health := protected.Group("/health")
+	{
+		health.POST("/sync", healthH.SyncData)
+		health.GET("/records", healthH.ListRecords)
+		health.GET("/records/:date", healthH.GetRecordByDate)
 	}
 
 	return r
