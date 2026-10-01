@@ -255,6 +255,88 @@ Para derrubar e limpar a infraestrutura:
 docker-compose down
 ```
 
+### 📖 Swagger (Documentação da API)
+
+O projeto conta com a documentação automática de todos os endpoints usando o Swagger UI.
+
+Com a API rodando, acesse em seu navegador:
+**`http://localhost:8080/swagger/index.html`**
+
+Lá você encontrará os modelos, rotas (Auth, Desafios, Saúde, Benefícios, etc) e poderá testá-los diretamente pela interface.
+
+---
+
+## 📊 Arquitetura e Fluxogramas
+
+### 1. Comunicação do Sistema
+
+Este fluxograma ilustra como as plataformas se comunicam com o servidor central:
+
+```mermaid
+graph TD
+    App["📱 CareGames+ App<br/>(React Native)"] <-->|"HTTP REST / JSON"| API["⚙️ Backend API<br/>(Golang / Gin)"]
+    App <-->|"WebSocket"| IoT["⌚ IoT Simulator<br/>(Wearables Data)"]
+    API <-->|"SQL Queries"| DB[("🐘 PostgreSQL<br/>(Database)")]
+    API -->|"Notificações / Alertas"| App
+```
+
+### 2. Modelo Relacional do Banco de Dados (ER)
+
+O banco relacional mantém integridade através do modelo a seguir:
+
+```mermaid
+erDiagram
+    USERS ||--o| USER_PROFILES : "has"
+    USERS ||--o| USER_POINTS : "has"
+    USERS ||--o{ HEALTH_SYNC_RECORDS : "syncs"
+    USERS ||--o{ USER_CHALLENGE_PROGRESS : "tracks"
+    USERS ||--o{ POINT_TRANSACTIONS : "generates"
+    USERS ||--o{ BENEFIT_REDEMPTIONS : "redeems"
+    USERS ||--o{ NOTIFICATIONS : "receives"
+    
+    CHALLENGES ||--o{ USER_CHALLENGE_PROGRESS : "progress"
+    BENEFITS ||--o{ BENEFIT_REDEMPTIONS : "generates"
+    
+    GROUPS ||--o{ GROUP_MEMBERS : "contains"
+    USERS ||--o{ GROUP_MEMBERS : "joins"
+    
+    SEASONS ||--o{ SEASON_RANKINGS : "has"
+    USERS ||--o{ SEASON_RANKINGS : "participates"
+```
+
+### 3. Fluxo Completo de Usuário (Jornada)
+
+A jornada típica de ganho de pontos e gamificação segue os passos abaixo:
+
+```mermaid
+sequenceDiagram
+    actor User as Usuário
+    participant App as Mobile App
+    participant API as Backend (Go)
+    participant DB as PostgreSQL
+
+    User->>App: Realiza Cadastro ou Login
+    App->>API: POST /api/v1/auth/login
+    API->>DB: Verifica credenciais
+    API-->>App: Retorna API Key (Auth)
+
+    User->>App: Caminha (Wearable / Pedômetro)
+    App->>API: POST /api/v1/health/sync (Passos/BPM)
+    API->>DB: Atualiza health_sync_records
+    API-->>App: Sucesso (200 OK)
+
+    User->>App: Clica em "Concluir Desafio"
+    App->>API: POST /api/v1/challenges/{id}/complete
+    API->>DB: Valida passos de hoje
+    API->>DB: Atualiza saldo de pontos (Transação)
+    API-->>App: Desafio concluído + Notificação push
+
+    User->>App: Acessa Loja de Benefícios
+    App->>API: POST /api/v1/benefits/{id}/redeem
+    API->>DB: Verifica estoque e subtrai pontos
+    API-->>App: Retorna Voucher do Desconto
+```
+
 ---
 
 ## 🧭 Tecnologias Utilizadas
