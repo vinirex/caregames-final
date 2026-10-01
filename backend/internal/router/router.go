@@ -8,6 +8,10 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
+
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
+	_ "github.com/caregames/api/docs"
 )
 
 // Setup builds and returns the configured Gin engine.
@@ -63,6 +67,9 @@ func Setup(db *sqlx.DB) *gin.Engine {
 		}
 		c.JSON(200, gin.H{"status": "ok"})
 	})
+
+	// ── Swagger docs ────────────────────────────────────────────
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	api := r.Group("/api/v1")
 

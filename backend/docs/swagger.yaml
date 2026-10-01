@@ -1,0 +1,979 @@
+basePath: /
+definitions:
+  github_com_caregames_api_internal_models.Group:
+    properties:
+      avatar_url:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      invite_code:
+        type: string
+      is_public:
+        type: boolean
+      max_members:
+        type: integer
+      name:
+        type: string
+      owner_id:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  github_com_caregames_api_internal_models.HealthSyncRecord:
+    properties:
+      calories:
+        type: integer
+      device_id:
+        type: string
+      distance_m:
+        type: integer
+      heart_rate_bpm:
+        type: integer
+      id:
+        type: string
+      platform:
+        type: string
+      raw_payload:
+        description: JSONB as string
+        type: string
+      record_date:
+        description: Use string if only YYYY-MM-DD
+        type: string
+      resting_hr_bpm:
+        type: integer
+      sleep_min:
+        type: integer
+      steps:
+        type: integer
+      synced_at:
+        type: string
+      temperature_c:
+        type: number
+      user_id:
+        type: string
+    type: object
+  github_com_caregames_api_internal_models.SeasonCreate:
+    properties:
+      description:
+        type: string
+      ends_at:
+        type: string
+      name:
+        type: string
+      starts_at:
+        type: string
+    required:
+    - ends_at
+    - name
+    - starts_at
+    type: object
+  github_com_caregames_api_internal_services.LoginInput:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  github_com_caregames_api_internal_services.RegisterInput:
+    properties:
+      age:
+        minimum: 18
+        type: integer
+      email:
+        type: string
+      password:
+        minLength: 8
+        type: string
+    required:
+    - age
+    - email
+    - password
+    type: object
+  github_com_caregames_api_internal_services.UpdateProfileInput:
+    properties:
+      address:
+        type: string
+      birthday:
+        description: '"YYYY-MM-DD"'
+        type: string
+      name:
+        type: string
+      theme_pref:
+        description: '"dark" | "light"'
+        type: string
+    type: object
+  github_com_caregames_api_pkg_response.APIError:
+    properties:
+      code:
+        type: string
+      message:
+        type: string
+    type: object
+  github_com_caregames_api_pkg_response.APIResponse:
+    properties:
+      data: {}
+      error:
+        $ref: '#/definitions/github_com_caregames_api_pkg_response.APIError'
+      message:
+        type: string
+      pagination:
+        $ref: '#/definitions/github_com_caregames_api_pkg_response.Pagination'
+      success:
+        type: boolean
+    type: object
+  github_com_caregames_api_pkg_response.Pagination:
+    properties:
+      limit:
+        type: integer
+      page:
+        type: integer
+      total:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  internal_handlers.addPointsInput:
+    properties:
+      amount:
+        minimum: 1
+        type: integer
+      reason:
+        type: string
+    required:
+    - amount
+    - reason
+    type: object
+  internal_handlers.spendPointsInput:
+    properties:
+      amount:
+        minimum: 1
+        type: integer
+      reason:
+        type: string
+    required:
+    - amount
+    - reason
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: This is the backend API for CareGames+
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: CareGames+ API
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Login credentials
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_caregames_api_internal_services.LoginInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_caregames_api_pkg_response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_caregames_api_pkg_response.APIResponse'
+      summary: Login and receive an API key
+      tags:
+      - auth
+  /auth/me:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_caregames_api_pkg_response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_caregames_api_pkg_response.APIResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get authenticated user info
+      tags:
+      - auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Registration payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_caregames_api_internal_services.RegisterInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/github_com_caregames_api_pkg_response.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_caregames_api_pkg_response.APIResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/github_com_caregames_api_pkg_response.APIResponse'
+      summary: Register a new user
+      tags:
+      - auth
+  /benefits:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_caregames_api_pkg_response.APIResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: List active benefits
+      tags:
+      - benefits
+  /benefits/{id}:
+    get:
+      parameters:
+      - description: Benefit ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_caregames_api_pkg_response.APIResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get a benefit by ID
+      tags:
+      - benefits
+  /benefits/{id}/redeem:
+    post:
+      parameters:
+      - description: Benefit ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_caregames_api_pkg_response.APIResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Redeem a benefit using points
+      tags:
+      - benefits
+  /benefits/redemptions:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_caregames_api_pkg_response.APIResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: List user's past redemptions
+      tags:
+      - benefits
+  /challenges:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_caregames_api_pkg_response.APIResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: List all active challenges with user progress
+      tags:
+      - challenges
+  /challenges/{id}/accept:
+    post:
+      parameters:
+      - description: Challenge ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_caregames_api_pkg_response.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_caregames_api_pkg_response.APIResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/github_com_caregames_api_pkg_response.APIResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Accept and start tracking a challenge
+      tags:
+      - challenges
+  /challenges/{id}/complete:
+    post:
+      parameters:
+      - description: Challenge ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_caregames_api_pkg_response.APIResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Mark a challenge as completed and receive points
+      tags:
+      - challenges
+  /challenges/{id}/progress:
+    put:
+      parameters:
+      - description: Challenge ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Progress Data
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_caregames_api_pkg_response.APIResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Update progress on an active challenge
+      tags:
+      - challenges
+  /groups:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_caregames_api_pkg_response.APIResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: List user groups
+      tags:
+      - groups
+    post:
+      parameters:
+      - description: Group Data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_caregames_api_internal_models.Group'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_caregames_api_pkg_response.APIResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Create a new group
+      tags:
+      - groups
+  /groups/{id}/leave:
+    post:
+      parameters:
+      - description: Group ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_caregames_api_pkg_response.APIResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Leave a group
+      tags:
+      - groups
+  /groups/{id}/ranking:
+    get:
+      parameters:
+      - description: Group ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_caregames_api_pkg_response.APIResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get group ranking
+      tags:
+      - groups
+  /groups/join:
+    post:
+      parameters:
+      - description: Invite Code
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_caregames_api_pkg_response.APIResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Join a group via invite code
+      tags:
+      - groups
+  /health/records:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_caregames_api_pkg_response.APIResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get health history
+      tags:
+      - health
+  /health/records/{date}:
+    get:
+      parameters:
+      - description: Date YYYY-MM-DD
+        in: path
+        name: date
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_caregames_api_pkg_response.APIResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get health data for a specific date
+      tags:
+      - health
+  /health/sync:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Health Data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_caregames_api_internal_models.HealthSyncRecord'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_caregames_api_pkg_response.APIResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Upload health data from a wearable/app
+      tags:
+      - health
+  /notifications:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_caregames_api_pkg_response.APIResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: List notifications
+      tags:
+      - notifications
+  /notifications/{id}:
+    delete:
+      parameters:
+      - description: Notification ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_caregames_api_pkg_response.APIResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete a notification
+      tags:
+      - notifications
+  /notifications/{id}/read:
+    put:
+      parameters:
+      - description: Notification ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_caregames_api_pkg_response.APIResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Mark notification as read
+      tags:
+      - notifications
+  /notifications/read:
+    delete:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_caregames_api_pkg_response.APIResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete all read notifications
+      tags:
+      - notifications
+  /notifications/read-all:
+    put:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_caregames_api_pkg_response.APIResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Mark all notifications as read
+      tags:
+      - notifications
+  /notifications/unread-count:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_caregames_api_pkg_response.APIResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get unread notifications count
+      tags:
+      - notifications
+  /points:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_caregames_api_pkg_response.APIResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get current points balance
+      tags:
+      - points
+  /points/add:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Points to add
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.addPointsInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_caregames_api_pkg_response.APIResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_caregames_api_pkg_response.APIResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Manually add points (admin only)
+      tags:
+      - points
+  /points/history:
+    get:
+      parameters:
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Items per page (default 20, max 100)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_caregames_api_pkg_response.APIResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get paginated point transaction history
+      tags:
+      - points
+  /points/spend:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Points to spend
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.spendPointsInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_caregames_api_pkg_response.APIResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/github_com_caregames_api_pkg_response.APIResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Manually spend points
+      tags:
+      - points
+  /profile:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_caregames_api_pkg_response.APIResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get authenticated user's profile
+      tags:
+      - profile
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Profile data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_caregames_api_internal_services.UpdateProfileInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_caregames_api_pkg_response.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_caregames_api_pkg_response.APIResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Update authenticated user's profile
+      tags:
+      - profile
+  /rankings/global:
+    get:
+      parameters:
+      - default: 20
+        description: Limit
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_caregames_api_pkg_response.APIResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get global ranking
+      tags:
+      - rankings
+  /rankings/global/opt-in:
+    post:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_caregames_api_pkg_response.APIResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Opt in to global ranking
+      tags:
+      - rankings
+  /rankings/global/opt-out:
+    post:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_caregames_api_pkg_response.APIResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Opt out of global ranking
+      tags:
+      - rankings
+  /seasons:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_caregames_api_pkg_response.APIResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: List all seasons
+      tags:
+      - seasons
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Season properties
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_caregames_api_internal_models.SeasonCreate'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/github_com_caregames_api_pkg_response.APIResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Create a new season
+      tags:
+      - seasons
+  /seasons/{id}:
+    delete:
+      parameters:
+      - description: Season ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_caregames_api_pkg_response.APIResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete a season
+      tags:
+      - seasons
+    get:
+      parameters:
+      - description: Season ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_caregames_api_pkg_response.APIResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get season by ID
+      tags:
+      - seasons
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Season ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Season properties
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_caregames_api_internal_models.SeasonCreate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_caregames_api_pkg_response.APIResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Update a season
+      tags:
+      - seasons
+  /seasons/{id}/activate:
+    post:
+      parameters:
+      - description: Season ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_caregames_api_pkg_response.APIResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Activate a season
+      tags:
+      - seasons
+  /seasons/active:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_caregames_api_pkg_response.APIResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get active season
+      tags:
+      - seasons
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
