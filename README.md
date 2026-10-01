@@ -215,6 +215,48 @@ caregames-final/
 
 ---
 
+## ⚙️ Backend API (Go & PostgreSQL)
+
+O repositório agora conta com uma robusta e completa API Backend desenvolvida em **Go (Gin Framework)** e **PostgreSQL** para suportar todas as operações da aplicação. 
+
+A arquitetura foi desenhada priorizando a alta performance, integridade dos dados e segurança, incluindo:
+* **Autenticação via API Keys** dinâmicas (criptografia com bcrypt e hash).
+* **Transações Atômicas**: Garantia de consistência no banco entre saldo de pontos e resgates de recompensas.
+* **Módulos**: Gestão de Perfis, Desafios Diários e Globais, Telemetria de Wearables/IoT, Notificações persistentes, Benefícios, Temporadas e Rankings (Grupos e Globais).
+
+### 🧪 Testes e Integração Contínua (CI/CD)
+
+O backend possui uma **suíte exaustiva de testes de integração** implementada no diretório `/backend/tests/`.
+Todo endpoint foi validado para garantir lógicas de negócio cruciais (como validação de idades, checagem de saldo insuficiente, meta não atingida em desafios, e deduplicação de e-mails).
+
+O projeto conta com rotinas automáticas de **CI/CD** usando **GitHub Actions** (`.github/workflows/ci.yml`), que a cada Push e Pull Request realiza de forma autônoma: a subida de banco de dados temporário, testes de cobertura e verificação de *build* do Docker.
+
+### 🐳 Como rodar o Backend com Docker
+
+O projeto inclui toda a orquestração via Docker (`Dockerfile` e `docker-compose.yml`). É possível subir a API e o Banco de Dados com apenas um comando, sem necessidade de instalar o Go nativamente.
+
+1. Acesse o diretório do backend:
+   ```sh
+   cd backend
+   ```
+
+2. Execute o Docker Compose:
+   ```sh
+   docker-compose up -d
+   ```
+
+Pronto! Isso fará com que:
+* O banco de dados PostgreSQL suba.
+* O contêiner da aplicação Go rode as *migrations* (criando todo o schema de tabelas).
+* A API ficará disponível em **`http://localhost:8080`**.
+
+Para derrubar e limpar a infraestrutura:
+```sh
+docker-compose down
+```
+
+---
+
 ## 🧭 Tecnologias Utilizadas
 
 * **React Native / Expo SDK 52**
