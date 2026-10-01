@@ -23,6 +23,7 @@ func Setup(db *sqlx.DB) *gin.Engine {
 	challengeRepo := repositories.NewChallengeRepository(db)
 	benefitRepo   := repositories.NewBenefitRepository(db)
 	healthRepo    := repositories.NewHealthRepository(db)
+	notifRepo     := repositories.NewNotificationRepository(db)
 
 	// ── Services ────────────────────────────────────────────────
 	authSvc      := services.NewAuthService(userRepo)
@@ -31,14 +32,16 @@ func Setup(db *sqlx.DB) *gin.Engine {
 	challengeSvc := services.NewChallengeService(challengeRepo)
 	benefitSvc   := services.NewBenefitService(benefitRepo, pointsSvc)
 	healthSvc    := services.NewHealthService(healthRepo, challengeSvc)
+	notifSvc     := services.NewNotificationService(notifRepo)
 
 	// ── Handlers ────────────────────────────────────────────────
 	authH      := handlers.NewAuthHandler(authSvc)
 	profileH   := handlers.NewProfileHandler(profileSvc)
 	pointsH    := handlers.NewPointsHandler(pointsSvc)
-	challengeH := handlers.NewChallengeHandler(challengeSvc, pointsSvc)
+	challengeH := handlers.NewChallengeHandler(challengeSvc, pointsSvc, notifSvc)
 	benefitH   := handlers.NewBenefitHandler(benefitSvc)
 	healthH    := handlers.NewHealthHandler(healthSvc)
+	notifH     := handlers.NewNotificationHandler(notifSvc)
 
 	// ── Auth middleware ──────────────────────────────────────────
 	authMiddleware := middleware.Auth(userRepo)
@@ -111,6 +114,17 @@ func Setup(db *sqlx.DB) *gin.Engine {
 		health.POST("/sync", healthH.SyncData)
 		health.GET("/records", healthH.ListRecords)
 		health.GET("/records/:date", healthH.GetRecordByDate)
+	}
+
+	// Notifications
+	notifs := protected.Group("/notifications")
+	{
+		notifs.GET("", notifH.List)
+		notifs.GET("/unread-count", notifH.GetUnreadCount)
+		notifs.PUT("/:id/read", notifH.MarkAsRead)
+		notifs.PUT("/read-all", notifH.MarkAllAsRead)
+		notifs.DELETE("/:id", notifH.Delete)
+		notifs.DELETE("/read", notifH.DeleteRead)
 	}
 
 	return r

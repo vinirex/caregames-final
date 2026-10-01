@@ -79,7 +79,7 @@ func (s *ChallengeService) UpdateProgress(userID, challengeID string, value floa
 
 // CompleteChallenge marks a challenge as completed and awards points.
 // Note: In a real system you'd use a DB transaction across these operations.
-func (s *ChallengeService) CompleteChallenge(userID, challengeID string, pointsSvc *PointsService) (int, error) {
+func (s *ChallengeService) CompleteChallenge(userID, challengeID string, pointsSvc *PointsService, notifSvc *NotificationService) (int, error) {
 	c, err := s.repo.GetByID(challengeID)
 	if err != nil {
 		return 0, fmt.Errorf("challenge_service.CompleteChallenge: fetch: %w", err)
@@ -109,6 +109,12 @@ func (s *ChallengeService) CompleteChallenge(userID, challengeID string, pointsS
 	desc := fmt.Sprintf("Conclusão do desafio: %s", c.Title)
 	if _, err := pointsSvc.AddPoints(userID, c.PointsReward, desc, challengeID, "challenge"); err != nil {
 		return 0, fmt.Errorf("challenge_service.CompleteChallenge: award points: %w", err)
+	}
+
+	// Send notification (ignore errors so we don't fail the completion if notifs fail)
+	if notifSvc != nil {
+		msg := fmt.Sprintf("Você ganhou +%d PTS por concluir %q.", c.PointsReward, c.Title)
+		_ = notifSvc.Create(userID, "Desafio Concluído! 🎉", msg, "emoji-events")
 	}
 
 	return c.PointsReward, nil

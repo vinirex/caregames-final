@@ -12,11 +12,12 @@ import (
 type ChallengeHandler struct {
 	svc       *services.ChallengeService
 	pointsSvc *services.PointsService
+	notifSvc  *services.NotificationService
 }
 
 // NewChallengeHandler creates a new ChallengeHandler.
-func NewChallengeHandler(svc *services.ChallengeService, pointsSvc *services.PointsService) *ChallengeHandler {
-	return &ChallengeHandler{svc: svc, pointsSvc: pointsSvc}
+func NewChallengeHandler(svc *services.ChallengeService, pointsSvc *services.PointsService, notifSvc *services.NotificationService) *ChallengeHandler {
+	return &ChallengeHandler{svc: svc, pointsSvc: pointsSvc, notifSvc: notifSvc}
 }
 
 // ListActive godoc
@@ -115,7 +116,7 @@ func (h *ChallengeHandler) CompleteChallenge(c *gin.Context) {
 
 	// We retrieve the points service from context since we injected it in router, 
 	// or we can pass it to the handler struct. Passing to struct is cleaner.
-	pts, err := h.svc.CompleteChallenge(userID, challengeID, h.pointsSvc)
+	pts, err := h.svc.CompleteChallenge(userID, challengeID, h.pointsSvc, h.notifSvc)
 	if err != nil {
 		if strings.HasPrefix(err.Error(), "not_found") {
 			response.NotFound(c, "Desafio não encontrado")
