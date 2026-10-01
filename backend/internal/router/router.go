@@ -24,6 +24,7 @@ func Setup(db *sqlx.DB) *gin.Engine {
 	benefitRepo   := repositories.NewBenefitRepository(db)
 	healthRepo    := repositories.NewHealthRepository(db)
 	notifRepo     := repositories.NewNotificationRepository(db)
+	groupRepo     := repositories.NewGroupRepository(db)
 
 	// ── Services ────────────────────────────────────────────────
 	authSvc      := services.NewAuthService(userRepo)
@@ -33,6 +34,7 @@ func Setup(db *sqlx.DB) *gin.Engine {
 	benefitSvc   := services.NewBenefitService(benefitRepo, pointsSvc)
 	healthSvc    := services.NewHealthService(healthRepo, challengeSvc)
 	notifSvc     := services.NewNotificationService(notifRepo)
+	groupSvc     := services.NewGroupService(groupRepo)
 
 	// ── Handlers ────────────────────────────────────────────────
 	authH      := handlers.NewAuthHandler(authSvc)
@@ -42,6 +44,7 @@ func Setup(db *sqlx.DB) *gin.Engine {
 	benefitH   := handlers.NewBenefitHandler(benefitSvc)
 	healthH    := handlers.NewHealthHandler(healthSvc)
 	notifH     := handlers.NewNotificationHandler(notifSvc)
+	groupH     := handlers.NewGroupHandler(groupSvc)
 
 	// ── Auth middleware ──────────────────────────────────────────
 	authMiddleware := middleware.Auth(userRepo)
@@ -125,6 +128,16 @@ func Setup(db *sqlx.DB) *gin.Engine {
 		notifs.PUT("/read-all", notifH.MarkAllAsRead)
 		notifs.DELETE("/:id", notifH.Delete)
 		notifs.DELETE("/read", notifH.DeleteRead)
+	}
+
+	// Groups
+	groups := protected.Group("/groups")
+	{
+		groups.GET("", groupH.ListUserGroups)
+		groups.POST("", groupH.CreateGroup)
+		groups.POST("/join", groupH.JoinGroup)
+		groups.GET("/:id/ranking", groupH.GetRanking)
+		groups.POST("/:id/leave", groupH.LeaveGroup)
 	}
 
 	return r
