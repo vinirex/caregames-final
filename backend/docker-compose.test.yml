@@ -1,0 +1,15 @@
+services:
+  postgres_test:
+    image: postgres:16-alpine
+    container_name: caregames_postgres_test
+    environment:
+      POSTGRES_DB:       caregames_test
+      POSTGRES_USER:     caregames
+      POSTGRES_PASSWORD: caregames_secret
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U caregames -d caregames_test"]
+      interval: 3s
+      timeout: 3s
+      retries: 15

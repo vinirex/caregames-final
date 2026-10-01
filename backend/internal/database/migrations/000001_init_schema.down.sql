@@ -1,0 +1,25 @@
+-- Rollback: drop all tables and types in reverse dependency order
+DROP TABLE IF EXISTS season_rankings CASCADE;
+DROP TABLE IF EXISTS group_members CASCADE;
+DROP TABLE IF EXISTS groups CASCADE;
+DROP TABLE IF EXISTS notifications CASCADE;
+DROP TABLE IF EXISTS health_sync_records CASCADE;
+DROP TABLE IF EXISTS user_devices CASCADE;
+DROP TABLE IF EXISTS benefit_redemptions CASCADE;
+DROP TABLE IF EXISTS benefits CASCADE;
+DROP TABLE IF EXISTS user_challenge_progress CASCADE;
+DROP TABLE IF EXISTS challenges CASCADE;
+DROP TABLE IF EXISTS seasons CASCADE;
+DROP TABLE IF EXISTS point_transactions CASCADE;
+DROP TABLE IF EXISTS user_points CASCADE;
+DROP TABLE IF EXISTS user_profiles CASCADE;
+DROP TABLE IF EXISTS user_api_keys CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
+
+DROP TYPE IF EXISTS group_role CASCADE;
+DROP TYPE IF EXISTS redemption_status CASCADE;
+DROP TYPE IF EXISTS device_platform CASCADE;
+DROP TYPE IF EXISTS challenge_status CASCADE;
+DROP TYPE IF EXISTS challenge_metric CASCADE;
+DROP TYPE IF EXISTS challenge_type CASCADE;
+DROP TYPE IF EXISTS transaction_type CASCADE;
