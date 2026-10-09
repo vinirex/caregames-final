@@ -11,13 +11,13 @@ import (
 func Seed(db *sqlx.DB) error {
 	log.Println("🌱 Seeding database...")
 
-	// 1. Generate password for mock users
+	// 1. Password for mocks
 	hash, err := crypto.HashPassword("SenhaSegura123!")
 	if err != nil {
 		return err
 	}
 
-	// 2. Seed Users (Needs to be first due to Foreign Keys)
+	// 2. Seed Users (Admin + Normal Users)
 	usersQuery := `
 		INSERT INTO users (id, email, password_hash, role, age)
 		VALUES 
@@ -30,7 +30,7 @@ func Seed(db *sqlx.DB) error {
 		return err
 	}
 
-	// 3. Seed User Profiles (fixed theme_pref column and values)
+	// 3. Seed User Profiles
 	profilesQuery := `
 		INSERT INTO user_profiles (user_id, name, theme_pref)
 		VALUES 
@@ -43,7 +43,7 @@ func Seed(db *sqlx.DB) error {
 		return err
 	}
 
-	// 4. Seed User Points (fixed lifetime_earned -> total_earned and added total_spent)
+	// 4. Seed User Points
 	pointsQuery := `
 		INSERT INTO user_points (user_id, balance, total_earned, total_spent)
 		VALUES 
@@ -56,7 +56,7 @@ func Seed(db *sqlx.DB) error {
 		return err
 	}
 
-	// 5. Seed Seasons (fixed title/start_date -> name/starts_at)
+	// 5. Seed Season
 	seasonsQuery := `
 		INSERT INTO seasons (id, name, description, starts_at, ends_at, is_active)
 		VALUES 
@@ -67,7 +67,7 @@ func Seed(db *sqlx.DB) error {
 		return err
 	}
 
-	// 6. Seed Challenges (added icon_name to match schema constraints)
+	// 6. Seed Challenges
 	challengesQuery := `
 		INSERT INTO challenges (id, slug, title, description, icon_name, points_reward, metric, target_value, target_unit, is_fixed, type)
 		VALUES 
@@ -80,19 +80,27 @@ func Seed(db *sqlx.DB) error {
 		return err
 	}
 
-	// 7. MOCK EXTRA: User Challenge Progress
+	// 7. Seed User Challenge Progress (Dinâmico para evitar falhas de FK)
 	progressQuery := `
 		INSERT INTO user_challenge_progress (user_id, challenge_id, status, current_value, points_awarded)
 		VALUES
-		('f2000000-0000-0000-0000-000000000002', 'a1000000-0000-0000-0000-000000000001', 'in_progress', 5000, 0),
-		('f2000000-0000-0000-0000-000000000002', 'a2000000-0000-0000-0000-000000000002', 'completed', 2000, 50)
+		(
+			'f2000000-0000-0000-0000-000000000002', 
+			(SELECT id FROM challenges WHERE slug = 'steps_10k'), 
+			'in_progress', 5000, 0
+		),
+		(
+			'f2000000-0000-0000-0000-000000000002', 
+			(SELECT id FROM challenges WHERE slug = 'water_2l'), 
+			'completed', 2000, 50
+		)
 		ON CONFLICT (user_id, challenge_id) DO NOTHING;
 	`
 	if _, err := db.Exec(progressQuery); err != nil {
 		return err
 	}
 
-	// 8. Seed Benefits (fixed ON CONFLICT to target ID explicitly)
+	// 8. Seed Benefits
 	benefitsQuery := `
 		INSERT INTO benefits (id, title, description, points_cost, category, stock, is_active, image_url)
 		VALUES 
@@ -128,7 +136,7 @@ func Seed(db *sqlx.DB) error {
 		return err
 	}
 
-	// 11. Seed Season Rankings (opt-in for users)
+	// 11. Seed Season Rankings
 	seasonRankingsQuery := `
 		INSERT INTO season_rankings (season_id, user_id, points_snapshot, opt_in)
 		VALUES 

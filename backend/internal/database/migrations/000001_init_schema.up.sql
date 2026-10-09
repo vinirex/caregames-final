@@ -253,14 +253,14 @@ CREATE INDEX IF NOT EXISTS idx_health_user_date ON health_sync_records(user_id, 
 -- TABLE: notifications
 -- ============================================================
 CREATE TABLE IF NOT EXISTS notifications (
-    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    title       VARCHAR(255) NOT NULL,
-    message     TEXT NOT NULL,
-    icon_name   VARCHAR(100) DEFAULT 'notifications',
-    icon_color  VARCHAR(20)  DEFAULT '#00E5FF',
-    is_read     BOOLEAN NOT NULL DEFAULT FALSE,
-    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id    UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    title      VARCHAR(255) NOT NULL,
+    message    TEXT NOT NULL,
+    icon_name  VARCHAR(100) DEFAULT 'notifications',
+    icon_color VARCHAR(20)  DEFAULT '#00E5FF',
+    is_read    BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, is_read, created_at DESC);
@@ -311,13 +311,3 @@ CREATE TABLE IF NOT EXISTS season_rankings (
 );
 
 CREATE INDEX IF NOT EXISTS idx_season_rankings_season ON season_rankings(season_id, points_snapshot DESC);
-
--- ============================================================
--- SEED: Fixed challenges
--- ============================================================
-INSERT INTO challenges (slug, title, description, icon_name, type, metric, target_value, target_unit, points_reward, is_active, is_fixed)
-VALUES
-    ('steps_10k',      '10.000 passos por dia',  'Alcance sua meta diária de passos para melhorar a saúde cardiovascular.', 'directions-walk',  'daily', 'steps',         10000, 'steps',   100, TRUE, TRUE),
-    ('water_2l',       'Beber 2L de Água',        'Mantenha-se hidratado ao longo do dia. Registre seu consumo diário.',     'water-drop',       'daily', 'water_ml',       2000, 'ml',       50, TRUE, TRUE),
-    ('meditation_15m', '15 min de Meditação',     'Concentre sua mente com uma sessão diária de meditação guiada.',          'self-improvement', 'daily', 'meditation_min',   15, 'minutes',  75, TRUE, TRUE)
-ON CONFLICT (slug) DO NOTHING;
