@@ -13,11 +13,11 @@ func Seed(db *sqlx.DB) error {
 
 	// Seed Fixed Challenges
 	challengesQuery := `
-		INSERT INTO challenges (id, slug, title, description, points_reward, goal_type, goal_value, is_fixed, type)
+		INSERT INTO challenges (id, slug, title, description, points_reward, metric, target_value, target_unit, is_fixed, type)
 		VALUES 
-		('a1000000-0000-0000-0000-000000000001', 'steps_10k', '10.000 Passos', 'Caminhe 10.000 passos hoje.', 100, 'steps', 10000, true, 'daily'),
-		('a2000000-0000-0000-0000-000000000002', 'water_2l', 'Hidratação Total', 'Beba 2 litros de água.', 50, 'water', 2000, true, 'daily'),
-		('a3000000-0000-0000-0000-000000000003', 'meditation_15m', 'Zen Master', 'Medite por 15 minutos.', 75, 'meditation', 15, true, 'daily')
+		('a1000000-0000-0000-0000-000000000001', 'steps_10k', '10.000 Passos', 'Caminhe 10.000 passos hoje.', 100, 'steps', 10000, 'steps', true, 'daily'),
+		('a2000000-0000-0000-0000-000000000002', 'water_2l', 'Hidratação Total', 'Beba 2 litros de água.', 50, 'water_ml', 2000, 'ml', true, 'daily'),
+		('a3000000-0000-0000-0000-000000000003', 'meditation_15m', 'Zen Master', 'Medite por 15 minutos.', 75, 'meditation_min', 15, 'minutes', true, 'daily')
 		ON CONFLICT (slug) DO NOTHING;
 	`
 	if _, err := db.Exec(challengesQuery); err != nil {
