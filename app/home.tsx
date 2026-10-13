@@ -28,28 +28,32 @@ export default function HomeScreen() {
     }
   }, [isLoading, userEmail]);
 
-  const activeEmail = userEmail || 'test@test.com';
+  const activeEmail = userEmail || '';
   const displaySteps = isHealthAvailable ? healthSteps : 0;
 
-  const [userRank, setUserRank] = useState<number>(4);
-  const [userName, setUserName] = useState<string>(activeEmail.split('@')[0]);
+  const [userRank, setUserRank] = useState<number>(1);
+  const [userName, setUserName] = useState<string>(activeEmail ? activeEmail.split('@')[0] : 'Atleta');
+  const [topChallenge, setTopChallenge] = useState<any>(null);
 
   useFocusEffect(
     useCallback(() => {
       let isMounted = true;
       const fetchUserData = async () => {
         try {
-          const profileRes = await api.getProfile(activeEmail);
-          if (isMounted) {
-            if (profileRes.success && profileRes.profile?.name) {
+          if (activeEmail) {
+            const profileRes = await api.getProfile(activeEmail);
+            if (isMounted && profileRes.success && profileRes.profile?.name) {
               setUserName(profileRes.profile.name);
-            } else {
-              setUserName(activeEmail.split('@')[0]);
             }
           }
           const { userRank: rank } = await api.getLeaderboard(activeEmail);
           if (isMounted) {
             setUserRank(rank);
+          }
+
+          const challengesRes = await api.getChallenges();
+          if (isMounted && challengesRes.success && challengesRes.challenges.length > 0) {
+            setTopChallenge(challengesRes.challenges[0]);
           }
         } catch (e) {
           console.error('Error fetching home user data:', e);
@@ -195,17 +199,17 @@ export default function HomeScreen() {
                 <Text className={`font-jetbrains text-xs uppercase font-bold mb-1 ${
                   theme === 'dark' ? 'text-cyan-400' : 'text-cyan-700'
                 }`}>
-                  DESAFIO ATIVO
+                  DESAFIO EM DESTAQUE
                 </Text>
                 <Text className={`font-sora font-semibold text-2xl mb-1 ${
                   theme === 'dark' ? 'text-white' : 'text-slate-900'
                 }`}>
-                  Semana da Hidratação
+                  {topChallenge ? topChallenge.title : '10.000 Passos'}
                 </Text>
                 <Text className={`font-hanken mb-4 ${
                   theme === 'dark' ? 'text-slate-400' : 'text-slate-600'
                 }`}>
-                  Mantenha a meta de 3L de água por dia durante 7 dias para desbloquear uma conquista especial.
+                  {topChallenge ? topChallenge.description : 'Caminhe 10.000 passos hoje para ganhar +100 PTS.'}
                 </Text>
                 
                 {/* Progress Bar */}
@@ -214,12 +218,12 @@ export default function HomeScreen() {
                     <Text className={`font-jetbrains text-[10px] uppercase font-bold ${
                       theme === 'dark' ? 'text-slate-300' : 'text-slate-700'
                     }`}>
-                      DIA 4/7
+                      PROGRESSO
                     </Text>
                     <Text className={`font-jetbrains text-[10px] uppercase font-bold ${
                       theme === 'dark' ? 'text-cyan-400' : 'text-cyan-700'
                     }`}>
-                      57%
+                      {topChallenge ? `${topChallenge.progressPercent}%` : '0%'}
                     </Text>
                   </View>
                   <View className={`h-2 w-full rounded-full overflow-hidden ${
@@ -229,7 +233,7 @@ export default function HomeScreen() {
                       colors={theme === 'dark' ? ['#00E5FF', '#3B82F6'] : ['#0284C7', '#0D9488']}
                       start={{ x: 0, y: 0 }}
                       end={{ x: 1, y: 0 }}
-                      style={{ width: '57%', height: '100%', borderRadius: 9999 }}
+                      style={{ width: `${topChallenge ? topChallenge.progressPercent : 0}%`, height: '100%', borderRadius: 9999 }}
                     />
                   </View>
                 </View>

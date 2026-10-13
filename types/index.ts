@@ -11,6 +11,7 @@ export interface ApiResponse<T = void> {
   points?: number;
   completedChallenges?: string[];
   profile?: ProfileData;
+  apiKey?: string;
   data?: T;
 }
 

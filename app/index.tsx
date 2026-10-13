@@ -42,14 +42,15 @@ export default function LoginScreen() {
 
     // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    if (!email.trim()) {
+      newErrors.email = 'Por favor, insira o seu e-mail.';
+    } else if (!emailRegex.test(email.trim())) {
       newErrors.email = 'Por favor, insira um endereço de e-mail válido.';
     }
 
-    // Password validation (strong password)
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/;
-    if (!passwordRegex.test(password)) {
-      newErrors.password = 'A senha deve ter pelo menos 8 caracteres, incluindo uma letra maiúscula, uma minúscula e um número.';
+    // Password check for login (only check if provided)
+    if (!password) {
+      newErrors.password = 'Por favor, insira a sua senha.';
     }
 
     setErrors(newErrors);
@@ -57,13 +58,14 @@ export default function LoginScreen() {
   };
 
   const handleLogin = async () => {
+    setErrors({});
     if (validate()) {
-      const response = await api.login(email, password);
+      const response = await api.login(email.trim(), password);
       if (response.success) {
-        await login(email);
+        await login(email.trim());
         router.replace('/home');
       } else {
-        setErrors(prev => ({ ...prev, api: response.message }));
+        setErrors({ api: response.message || 'E-mail ou senha incorretos. Verifique suas credenciais.' });
       }
     }
   };
@@ -143,9 +145,10 @@ export default function LoginScreen() {
         </View>
 
         <View className="mt-6 bg-slate-900 p-4 rounded-xl border border-slate-800">
-          <Text className="text-slate-400 text-center text-xs mb-1 font-sans">Para testar sem conexão ao banco, use:</Text>
-          <Text className="text-cyan-400 text-center text-sm font-mono font-bold">test@test.com</Text>
-          <Text className="text-slate-200 text-center text-xs font-mono">Senha: Test1234</Text>
+          <Text className="text-slate-400 text-center text-xs mb-2 font-sans">Contas de teste disponíveis:</Text>
+          <Text className="text-cyan-400 text-center text-sm font-mono font-bold">joao.silva@teste.com</Text>
+          <Text className="text-slate-400 text-center text-xs font-mono">ou  maria.souza@teste.com</Text>
+          <Text className="text-slate-200 text-center text-xs font-mono mt-1">Senha: SenhaSegura123!</Text>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>

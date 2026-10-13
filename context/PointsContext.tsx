@@ -12,15 +12,17 @@ interface PointsContextData {
 const PointsContext = createContext<PointsContextData | undefined>(undefined);
 
 export const PointsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [points, setPoints] = useState(1250);
+  const [points, setPoints] = useState(0);
   const { userEmail } = useAuth();
-  const activeEmail = userEmail || 'test@test.com';
+  const activeEmail = userEmail || '';
 
   const loadPoints = useCallback(async () => {
     try {
-      const response = await api.getPoints(activeEmail);
-      if (response.success && response.points !== undefined) {
-        setPoints(response.points);
+      if (activeEmail) {
+        const response = await api.getPoints(activeEmail);
+        if (response.success && response.points !== undefined) {
+          setPoints(response.points);
+        }
       }
     } catch (e) {
       console.error('Failed to load points:', e);
@@ -32,20 +34,18 @@ export const PointsProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   }, [loadPoints]);
 
   const addPoints = useCallback(async (amount: number) => {
-    setPoints(prev => {
-      const newPoints = prev + amount;
-      api.updatePoints(activeEmail, newPoints);
-      return newPoints;
-    });
-  }, [activeEmail]);
+    setPoints(prev => prev + amount);
+    await loadPoints();
+  }, [loadPoints]);
 
   const spendPoints = useCallback(async (amount: number) => {
-    setPoints(prev => {
-      const newPoints = Math.max(0, prev - amount);
-      api.updatePoints(activeEmail, newPoints);
-      return newPoints;
-    });
-  }, [activeEmail]);
+    const res = await api.spendPoints(amount, 'Resgate de benefício');
+    if (res.success && res.points !== undefined) {
+      setPoints(res.points);
+    } else {
+      await loadPoints();
+    }
+  }, [loadPoints]);
 
   const value = useMemo(
     () => ({ points, addPoints, spendPoints, refreshPoints: loadPoints }),

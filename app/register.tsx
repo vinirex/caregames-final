@@ -27,9 +27,9 @@ export default function RegisterScreen() {
       newErrors.email = 'Por favor, insira um endereço de e-mail válido.';
     }
 
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/;
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)\S{8,15}$/;
     if (!passwordRegex.test(password)) {
-      newErrors.password = 'A senha deve ter pelo menos 8 caracteres, incluindo uma letra maiúscula, uma minúscula e um número.';
+      newErrors.password = 'A senha deve ter entre 8 e 15 caracteres, incluindo uma letra maiúscula, uma minúscula e um número.';
     }
 
     const parsedAge = parseInt(age, 10);
