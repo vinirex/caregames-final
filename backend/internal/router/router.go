@@ -5,6 +5,7 @@ import (
 	"github.com/caregames/api/internal/middleware"
 	"github.com/caregames/api/internal/repositories"
 	"github.com/caregames/api/internal/services"
+	"time"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
@@ -19,7 +20,14 @@ func Setup(db *sqlx.DB) *gin.Engine {
 	r := gin.New()
 	r.Use(gin.Recovery())
 	r.Use(middleware.Logger())
-	r.Use(cors.Default()) // allow all origins; restrict in production via config
+	r.Use(cors.New(cors.Config{
+		AllowAllOrigins:  true,
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "Accept", "X-Requested-With"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: false,
+		MaxAge:           12 * time.Hour,
+	}))
 
 	// ── Repositories ────────────────────────────────────────────
 	userRepo      := repositories.NewUserRepository(db)

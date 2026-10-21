@@ -8,7 +8,10 @@
     "prebuild": "expo prebuild",
     "lint": "eslint \"**/*.{js,jsx,ts,tsx}\" && prettier -c \"**/*.{js,jsx,ts,tsx,json}\"",
     "format": "eslint \"**/*.{js,jsx,ts,tsx}\" --fix && prettier \"**/*.{js,jsx,ts,tsx,json}\" --write",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "proxy": "node backend/cors-proxy.js",
+    "typecheck": "tsc --noEmit",
+    "test:api": "node --test tests/api.test.cjs"
   },
   "dependencies": {
     "@expo-google-fonts/hanken-grotesk": "^0.4.3",
@@ -58,5 +61,8 @@
     "typescript": "~6.0.3"
   },
   "main": "expo-router/entry",
-  "private": true
+  "private": true,
+  "engines": {
+    "node": "^22.13.0 || ^24.3.0 || >=25.0.0"
+  }
 }

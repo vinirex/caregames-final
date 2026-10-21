@@ -1,5 +1,14 @@
-import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback, useMemo } from 'react';
+import React, {
+  createContext,
+  useState,
+  useContext,
+  ReactNode,
+  useEffect,
+  useCallback,
+  useMemo,
+} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { clearSession, getValidToken, onSessionExpired } from '../services/api';
 
 interface AuthContextData {
   userEmail: string | null;
@@ -18,8 +27,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // Load persisted user session on mount
     const loadSession = async () => {
       try {
-        const storedEmail = await AsyncStorage.getItem('@user_email');
-        if (storedEmail) {
+        const [storedEmail, token] = await Promise.all([
+          AsyncStorage.getItem('@user_email'),
+          getValidToken(),
+        ]);
+        if (storedEmail && token) {
           setUserEmail(storedEmail);
         }
       } catch (error) {
@@ -42,12 +54,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const logout = useCallback(async () => {
     try {
-      await AsyncStorage.clear();
+      // Only remove auth-related keys; avoid wiping unrelated app data.
+      await clearSession();
+      await AsyncStorage.removeItem('@user_email');
       setUserEmail(null);
     } catch (error) {
       console.error('Failed to clear cache on logout:', error);
     }
   }, []);
+
+  useEffect(
+    () =>
+      onSessionExpired(() => {
+        void logout();
+      }),
+    [logout]
+  );
 
   const value = useMemo(
     () => ({ userEmail, isLoading, login, logout }),

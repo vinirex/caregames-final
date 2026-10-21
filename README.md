@@ -355,3 +355,28 @@ sequenceDiagram
 * **AsyncStorage** (Persistência Local)
 * **WebSocket / IoTService** (Telemetria em Tempo Real)
 * **Expo Image Picker & Share API**
+
+
+## Build Android e integração com a API (Expo SDK 57)
+
+Use Node 24.19.0, conforme .nvmrc e eas.json. O Node global 22.12.0 não é compatível com a versão instalada do React Native. A instalação global não é alterada pelo projeto.
+
+Antes do build:
+
+```sh
+npm run typecheck
+npm run test:api
+npx expo export --platform android
+```
+
+Para gerar um APK independente do Metro:
+
+```sh
+npx eas-cli build --platform android --profile preview
+```
+
+O perfil preview gera APK; development é um cliente de desenvolvimento. Os perfis EAS usam Node 24.19.0 e a URL pública HTTPS em EXPO_PUBLIC_API_URL. Essa variável é pública e incorporada ao bundle: nunca inclua senhas ou tokens nela.
+
+Na web em desenvolvimento, execute npm run proxy em outro terminal e npm run web. O cliente usa http://localhost:8090/api/v1 nesse ambiente, mesmo quando EXPO_PUBLIC_API_URL está definida. As portas locais diferentes continuam sendo origens diferentes; o proxy responde ao preflight. Android nativo e builds web de produção usam a API diretamente. Para web em produção, o servidor precisa permitir Authorization no CORS.
+
+Os testes de integração do cliente usam respostas simuladas dos contratos Go em backend/ e não escrevem no servidor publicado. A compilação nativa, a instalação em um aparelho e um login real devem ser validados antes da distribuição.

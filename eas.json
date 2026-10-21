@@ -6,16 +6,28 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "node": "24.19.0",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://caregames.mk-ultra.tech/api/v1"
+      }
     },
     "preview": {
       "distribution": "internal",
       "android": {
         "buildType": "apk"
+      },
+      "node": "24.19.0",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://caregames.mk-ultra.tech/api/v1"
       }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "node": "24.19.0",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://caregames.mk-ultra.tech/api/v1"
+      }
     }
   },
   "submit": {

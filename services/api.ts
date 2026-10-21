@@ -1,14 +1,92 @@
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ApiResponse, ProfileData } from '../types';
+import { ApiResponse, ProfileData, ApiNotification } from '../types';
+import { readString, readNumber } from './api-values';
 
-// NOTE: 10.0.2.2 is the Android Emulator alias for the host machine.
-// On a real physical device, EXPO_PUBLIC_API_URL MUST be set to your server's
-// public IP or domain (e.g. http://192.168.1.100:8080/api/v1) at build time.
+// Only browser development uses the local proxy. Native builds call HTTPS directly.
+const isDevWeb = __DEV__ && Platform.OS === 'web';
 const DEFAULT_HOST = Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
-export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || `http://${DEFAULT_HOST}:8080/api/v1`;
+export const API_BASE_URL = (
+  isDevWeb
+    ? 'http://localhost:8090/api/v1'
+    : process.env.EXPO_PUBLIC_API_URL ||
+      (__DEV__ ? `http://${DEFAULT_HOST}:8080/api/v1` : 'https://caregames.mk-ultra.tech/api/v1')
+).replace(/\/+$/, '');
+
+const sessionExpiredListeners = new Set<() => void>();
+export function onSessionExpired(listener: () => void): () => void {
+  sessionExpiredListeners.add(listener);
+  return () => {
+    sessionExpiredListeners.delete(listener);
+  };
+}
+function notifySessionExpired(): void {
+  sessionExpiredListeners.forEach((listener) => listener());
+}
 
 const API_KEY_STORAGE = '@user_api_key';
+const TOKEN_ISSUED_AT = '@user_token_issued_at';
+
+/** 120 minutes in milliseconds */
+const SESSION_TTL_MS = 120 * 60 * 1000;
+
+/** Sentinel error thrown when the session has expired. */
+export class SessionExpiredError extends Error {
+  constructor() {
+    super('SESSION_EXPIRED');
+    this.name = 'SessionExpiredError';
+  }
+}
+
+/**
+ * Clears all stored session data (token + timestamp).
+ * Call this on logout or when a 401 is received.
+ */
+export async function clearSession(): Promise<void> {
+  try {
+    await AsyncStorage.multiRemove([API_KEY_STORAGE, TOKEN_ISSUED_AT]);
+  } catch {}
+}
+
+/**
+ * Returns the stored Bearer token if it is still within its 120-minute
+ * lifetime, or null if no token is stored.
+ * Throws SessionExpiredError if a token exists but has exceeded the TTL,
+ * after clearing it from storage so the UI can redirect to login.
+ */
+export async function getValidToken(): Promise<string | null> {
+  try {
+    const [token, issuedAtStr] = await AsyncStorage.multiGet([
+      API_KEY_STORAGE,
+      TOKEN_ISSUED_AT,
+    ]).then((pairs) => pairs.map((p) => p[1]));
+
+    if (!token) return null;
+
+    // ── Migration: token exists but no timestamp (logged in before this update).
+    // Write current time so the session gets a fresh 120-min window instead of
+    // being immediately invalidated (elapsed = Date.now() - 0 = ~57 years).
+    if (!issuedAtStr) {
+      await AsyncStorage.setItem(TOKEN_ISSUED_AT, String(Date.now()));
+      return token;
+    }
+
+    const issuedAt = Number(issuedAtStr);
+    const elapsed = Date.now() - issuedAt;
+
+    if (!Number.isFinite(issuedAt) || elapsed < 0 || elapsed >= SESSION_TTL_MS) {
+      await clearSession();
+      // Notify AuthContext to log out and redirect to the login screen.
+      notifySessionExpired();
+      throw new SessionExpiredError();
+    }
+
+    return token;
+  } catch (err) {
+    if (err instanceof SessionExpiredError) throw err;
+    return null;
+  }
+}
 
 export interface LeaderboardUser {
   rank: number;
@@ -42,15 +120,11 @@ export interface BenefitItem {
   stock?: number;
 }
 
-async function getStoredApiKey(): Promise<string | null> {
-  try {
-    return await AsyncStorage.getItem(API_KEY_STORAGE);
-  } catch {
-    return null;
-  }
-}
-
-async function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutMs = 5000): Promise<Response> {
+async function fetchWithTimeout(
+  url: string,
+  options: RequestInit = {},
+  timeoutMs = 5000
+): Promise<Response> {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -63,28 +137,43 @@ async function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutM
   }
 }
 
-async function apiRequest<T = any>(endpoint: string, options: RequestInit = {}): Promise<any> {
-  const apiKey = await getStoredApiKey();
+async function apiRequest(endpoint: string, options: RequestInit = {}): Promise<any> {
+  // getValidToken() throws SessionExpiredError if the 120-min TTL has elapsed.
+  const token = await getValidToken();
+
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+    // Only set Content-Type when there is a body — sending it on GET/DELETE
+    // triggers an unnecessary CORS preflight even with open CORS on the server.
+    ...(options.body ? { 'Content-Type': 'application/json' } : {}),
     ...(options.headers as Record<string, string>),
   };
-  if (apiKey) {
-    headers['X-API-Key'] = apiKey;
-    headers['Authorization'] = `Bearer ${apiKey}`;
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
   }
 
   const url = `${API_BASE_URL}${endpoint}`;
   const response = await fetchWithTimeout(url, { ...options, headers });
-  
+
+  // ── Server-side 401 interceptor ──────────────────────────────────────────
+  // If the server rejects the token (revoked, malformed, etc.), clear the
+  // local session and redirect to login just like an expired TTL.
+  if (response.status === 401) {
+    await clearSession();
+    notifySessionExpired();
+  }
+
   const contentType = response.headers.get('content-type') || '';
   if (!contentType.includes('application/json')) {
     const text = await response.text();
-    throw new Error(`Resposta do servidor em formato inválido (${response.status}): ${text.substring(0, 100)}`);
+    throw new Error(
+      `Resposta do servidor em formato inválido (${response.status}): ${text.substring(0, 100)}`
+    );
   }
 
   const data = await response.json();
-  return { status: response.status, ...data };
+
+  return { ...data, status: response.status };
 }
 
 export const api = {
@@ -107,20 +196,31 @@ export const api = {
 
   login: async (email: string, password: string): Promise<ApiResponse> => {
     try {
-      const res = await apiRequest('/auth/login', {
+      // Login does NOT go through apiRequest to avoid the token-expiry check.
+      const url = `${API_BASE_URL}/auth/login`;
+      const response = await fetchWithTimeout(url, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
+      const res = await response.json();
 
       if (res.success && res.data?.api_key) {
-        await AsyncStorage.setItem(API_KEY_STORAGE, res.data.api_key);
+        // Persist token AND the exact moment it was issued.
+        await AsyncStorage.multiSet([
+          [API_KEY_STORAGE, res.data.api_key],
+          [TOKEN_ISSUED_AT, String(Date.now())],
+        ]);
         return {
           success: true,
           apiKey: res.data.api_key,
           message: res.message || 'Login realizado com sucesso',
         };
       }
-      return { success: false, message: res.error?.message || res.message || 'E-mail ou senha inválidos' };
+      return {
+        success: false,
+        message: res.error?.message || res.message || 'E-mail ou senha inválidos',
+      };
     } catch (err: any) {
       return { success: false, message: err.message || 'Erro de conexão ao servidor backend' };
     }
@@ -132,14 +232,14 @@ export const api = {
       if (res.success && res.data) {
         const p = res.data;
         const profile: ProfileData = {
-          name: p.name || email.split('@')[0],
-          birthday: p.birthday ? p.birthday.split('T')[0] : '',
-          address: p.address || '',
+          name: readString(p.name) || email.split('@')[0],
+          birthday: readString(p.birthday).split('T')[0],
+          address: readString(p.address),
         };
-        return { success: true, profile, photoUri: p.photo_url || null };
+        return { success: true, profile, photoUri: readString(p.photo_url) || null };
       }
       return { success: false, profile: { name: email.split('@')[0] } };
-    } catch (err) {
+    } catch {
       return { success: false, profile: { name: email.split('@')[0] } };
     }
   },
@@ -167,7 +267,7 @@ export const api = {
     try {
       const res = await apiRequest('/profile', { method: 'GET' });
       if (res.success && res.data?.photo_url) {
-        return { success: true, photoUri: res.data.photo_url };
+        return { success: true, photoUri: readString(res.data.photo_url) || null };
       }
     } catch {}
     return { success: false, photoUri: null };
@@ -189,7 +289,12 @@ export const api = {
     try {
       const res = await apiRequest('/points', { method: 'GET' });
       if (res.success && res.data) {
-        const balance = typeof res.data.balance === 'number' ? res.data.balance : (typeof res.data === 'number' ? res.data : 0);
+        const balance =
+          typeof res.data.balance === 'number'
+            ? res.data.balance
+            : typeof res.data === 'number'
+              ? res.data
+              : 0;
         return { success: true, points: balance };
       }
     } catch {}
@@ -221,20 +326,27 @@ export const api = {
       const res = await apiRequest('/challenges', { method: 'GET' });
       if (res.success && Array.isArray(res.data)) {
         const challenges: ChallengeItem[] = res.data.map((c: any) => {
-          const current = c.current_value || 0;
-          const goal = c.goal_value || 100;
-          const percent = Math.min(100, Math.round((current / goal) * 100));
+          const current = readNumber(c.progress?.current_value ?? c.current_value) ?? 0;
+          const goal = readNumber(c.target_value ?? c.goal_value) ?? 0;
+          const percent =
+            goal > 0 ? Math.max(0, Math.min(100, Math.round((current / goal) * 100))) : 0;
           return {
             id: c.id || c.slug,
             slug: c.slug || c.id,
             title: c.title,
             description: c.description,
-            points: c.points_reward || 50,
-            icon: c.icon_name || (c.slug === 'steps_10k' ? 'directions-walk' : c.slug === 'water_2l' ? 'water-drop' : 'self-improvement'),
+            points: readNumber(c.points_reward) ?? 0,
+            icon:
+              readString(c.icon_name) ||
+              (c.slug === 'steps_10k'
+                ? 'directions-walk'
+                : c.slug === 'water_2l'
+                  ? 'water-drop'
+                  : 'self-improvement'),
             progressText: `${current.toLocaleString('pt-BR')}`,
             targetText: `${goal.toLocaleString('pt-BR')}`,
             progressPercent: percent,
-            status: c.status || 'not_started',
+            status: c.progress?.status ?? c.status ?? 'not_started',
           };
         });
         return { success: true, challenges };
@@ -248,8 +360,8 @@ export const api = {
       const res = await apiRequest('/challenges', { method: 'GET' });
       if (res.success && Array.isArray(res.data)) {
         const completed = res.data
-          .filter((c: any) => c.status === 'completed')
-          .map((c: any) => c.id || c.slug);
+          .filter((c: any) => (c.progress?.status ?? c.status) === 'completed')
+          .flatMap((c: any) => [c.id, c.slug].filter((id): id is string => typeof id === 'string'));
         return { success: true, completedChallenges: completed };
       }
     } catch {}
@@ -276,10 +388,12 @@ export const api = {
           id: b.id,
           title: b.title,
           description: b.description,
-          points: b.points_cost || 500,
-          category: b.category || 'geral',
-          image: b.image_url || `https://picsum.photos/seed/${b.category || b.id}/200`,
-          stock: b.stock,
+          points: readNumber(b.points_cost) ?? 0,
+          category: readString(b.category) || 'geral',
+          image:
+            readString(b.image_url) ||
+            `https://picsum.photos/seed/${readString(b.category) || b.id}/200`,
+          stock: readNumber(b.stock),
         }));
         return { success: true, benefits };
       }
@@ -293,35 +407,43 @@ export const api = {
       if (res.success) {
         return { success: true, message: res.message || 'Benefício resgatado com sucesso' };
       }
-      return { success: false, message: res.error?.message || 'Pontos insuficientes ou benefício esgotado' };
+      return {
+        success: false,
+        message: res.error?.message || 'Pontos insuficientes ou benefício esgotado',
+      };
     } catch (err: any) {
       return { success: false, message: err.message || 'Erro de conexão' };
     }
   },
 
-  getLeaderboard: async (currentUserEmail: string): Promise<{ leaderboard: LeaderboardUser[]; userRank: number }> => {
+  getLeaderboard: async (
+    currentUserEmail: string
+  ): Promise<{ leaderboard: LeaderboardUser[]; userRank: number }> => {
     try {
       const res = await apiRequest('/rankings/global', { method: 'GET' });
-      if (res.success && Array.isArray(res.data) && res.data.length > 0) {
-        const list: LeaderboardUser[] = res.data.map((item: any, idx: number) => {
+      const entries = Array.isArray(res.data) ? res.data : res.data?.leaderboard;
+      if (res.success && Array.isArray(entries)) {
+        const list: LeaderboardUser[] = entries.map((item: any, idx: number) => {
           const isUser = item.email === currentUserEmail || item.is_current_user === true;
           return {
             rank: item.rank || idx + 1,
-            name: item.name || item.email?.split('@')[0] || 'Atleta',
+            name: readString(item.name) || item.email?.split('@')[0] || 'Atleta',
             points: item.points || item.balance || 0,
-            avatar: item.photo_url || item.avatar,
+            avatar: readString(item.avatar_url ?? item.photo_url ?? item.avatar) || undefined,
             isCurrentUser: isUser,
-            initials: (item.name || item.email || 'A').substring(0, 2).toUpperCase(),
+            initials:
+              readString(item.initials) ||
+              (readString(item.name) || item.email || 'A').substring(0, 2).toUpperCase(),
           };
         });
 
-        const userItem = list.find(u => u.isCurrentUser);
-        const userRank = userItem ? userItem.rank : 1;
+        const userItem = list.find((u) => u.isCurrentUser);
+        const userRank = readNumber(res.data?.current_user?.rank) ?? userItem?.rank ?? 0;
         return { leaderboard: list, userRank };
       }
     } catch {}
 
-    return { leaderboard: [], userRank: 1 };
+    return { leaderboard: [], userRank: 0 };
   },
 
   syncHealthData: async (steps: number, heartRate?: number | null): Promise<ApiResponse> => {
@@ -330,13 +452,77 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({
           steps,
-          heart_rate: heartRate || 0,
-          sync_date: new Date().toISOString().split('T')[0],
+          heart_rate_bpm: heartRate || 0,
+          record_date: new Date().toISOString().split('T')[0],
+          platform: 'mobile',
         }),
       });
       return { success: res.success || res.status === 200 };
     } catch {
       return { success: false };
     }
-  }
+  },
+
+  // ── Notifications ────────────────────────────────────────────────────────
+
+  getNotifications: async (): Promise<ApiResponse<ApiNotification[]>> => {
+    try {
+      const res = await apiRequest('/notifications', { method: 'GET' });
+      if (res.success && res.data) {
+        const notifications = Array.isArray(res.data) ? res.data : res.data.notifications;
+        if (Array.isArray(notifications)) return { success: true, data: notifications };
+      }
+      return { success: false, data: [] };
+    } catch {
+      return { success: false, data: [] };
+    }
+  },
+
+  getUnreadNotificationCount: async (): Promise<ApiResponse<{ count: number }>> => {
+    try {
+      const res = await apiRequest('/notifications/unread-count', { method: 'GET' });
+      return {
+        success: res.success,
+        data: { count: readNumber(res.data?.unread_count ?? res.data?.count) ?? 0 },
+      };
+    } catch {
+      return { success: false, data: { count: 0 } };
+    }
+  },
+
+  markNotificationRead: async (id: string): Promise<ApiResponse> => {
+    try {
+      const res = await apiRequest(`/notifications/${id}/read`, { method: 'PUT' });
+      return { success: res.success };
+    } catch {
+      return { success: false };
+    }
+  },
+
+  markAllNotificationsRead: async (): Promise<ApiResponse> => {
+    try {
+      const res = await apiRequest('/notifications/read-all', { method: 'PUT' });
+      return { success: res.success };
+    } catch {
+      return { success: false };
+    }
+  },
+
+  deleteNotification: async (id: string): Promise<ApiResponse> => {
+    try {
+      const res = await apiRequest(`/notifications/${id}`, { method: 'DELETE' });
+      return { success: res.success };
+    } catch {
+      return { success: false };
+    }
+  },
+
+  clearReadNotifications: async (): Promise<ApiResponse> => {
+    try {
+      const res = await apiRequest('/notifications/read', { method: 'DELETE' });
+      return { success: res.success };
+    } catch {
+      return { success: false };
+    }
+  },
 };
