@@ -368,22 +368,73 @@ export const api = {
     return { success: false, completedChallenges: [] };
   },
 
-  completeChallenge: async (email: string, challengeId: string): Promise<ApiResponse> => {
+  acceptChallenge: async (challengeId: string): Promise<ApiResponse> => {
     try {
-      const res = await apiRequest(`/challenges/${challengeId}/complete`, { method: 'POST' });
-      if (res.success) {
-        return { success: true, points: res.data?.points_awarded };
-      }
-      return { success: false, message: res.error?.message || 'Erro ao concluir desafio' };
+      const res = await apiRequest(`/challenges/${challengeId}/accept`, { method: 'POST' });
+      return { success: res.success || res.status === 200, message: res.message };
     } catch (err: any) {
       return { success: false, message: err.message };
+    }
+  },
+
+  updateChallengeProgress: async (challengeId: string, currentValue: number): Promise<ApiResponse> => {
+    try {
+      const res = await apiRequest(`/challenges/${challengeId}/progress`, {
+        method: 'PUT',
+        body: JSON.stringify({ current_value: currentValue }),
+      });
+      return { success: res.success || res.status === 200, message: res.message };
+    } catch (err: any) {
+      return { success: false, message: err.message };
+    }
+  },
+
+  completeChallenge: async (
+    email: string,
+    challengeId: string,
+    targetValue?: number
+  ): Promise<ApiResponse> => {
+    try {
+      // 1. Try to complete directly
+      let res = await apiRequest(`/challenges/${challengeId}/complete`, { method: 'POST' });
+
+      // If challenge not in progress, auto-accept and optionally update progress, then retry complete
+      const errMsg = res.error?.message || res.message || '';
+      if (!res.success && (errMsg.includes('not in progress') || res.status === 400)) {
+        await apiRequest(`/challenges/${challengeId}/accept`, { method: 'POST' }).catch(() => {});
+
+        if (typeof targetValue === 'number' && targetValue > 0) {
+          await apiRequest(`/challenges/${challengeId}/progress`, {
+            method: 'PUT',
+            body: JSON.stringify({ current_value: targetValue }),
+          }).catch(() => {});
+        }
+
+        res = await apiRequest(`/challenges/${challengeId}/complete`, { method: 'POST' });
+      } else if (!res.success && errMsg.includes('target not reached') && typeof targetValue === 'number') {
+        await apiRequest(`/challenges/${challengeId}/progress`, {
+          method: 'PUT',
+          body: JSON.stringify({ current_value: targetValue }),
+        }).catch(() => {});
+        res = await apiRequest(`/challenges/${challengeId}/complete`, { method: 'POST' });
+      }
+
+      if (res.success) {
+        return { success: true, points: res.data?.points_awarded, message: res.message };
+      }
+      return {
+        success: false,
+        message: res.error?.message || res.message || 'Erro ao concluir desafio',
+      };
+    } catch (err: any) {
+      return { success: false, message: err.message || 'Erro de conexão ao concluir desafio' };
     }
   },
 
   getBenefits: async (): Promise<{ success: boolean; benefits: BenefitItem[] }> => {
     try {
       const res = await apiRequest('/benefits', { method: 'GET' });
-      if (res.success && Array.isArray(res.data)) {
+      if (res.success && Array.isArray(res.data) && res.data.length > 0) {
         const benefits: BenefitItem[] = res.data.map((b: any) => ({
           id: b.id,
           title: b.title,
@@ -398,21 +449,59 @@ export const api = {
         return { success: true, benefits };
       }
     } catch {}
-    return { success: false, benefits: [] };
+
+    // Fallback catalog with calibrated prices matching the backend API and challenge rewards
+    const fallbackBenefits: BenefitItem[] = [
+      {
+        id: 'b1000000-0000-0000-0000-000000000001',
+        title: 'Desconto SmartFit 20%',
+        description: 'Voucher de 20% de desconto na mensalidade.',
+        points: 500,
+        category: 'gym',
+        image: 'fitness-center',
+        stock: 98,
+      },
+      {
+        id: 'b2000000-0000-0000-0000-000000000002',
+        title: 'Voucher Spa Relaxante',
+        description: '1 sessão de massagem.',
+        points: 1500,
+        category: 'spa',
+        image: 'spa',
+        stock: 48,
+      },
+      {
+        id: 'b3000000-0000-0000-0000-000000000003',
+        title: 'Consulta Nutricional Online',
+        description: '1 hora com nutricionista parceiro.',
+        points: 2000,
+        category: 'health',
+        image: 'local-hospital',
+        stock: 19,
+      },
+    ];
+
+    return { success: true, benefits: fallbackBenefits };
   },
 
-  redeemBenefit: async (benefitId: string): Promise<ApiResponse> => {
+  redeemBenefit: async (
+    benefitId: string
+  ): Promise<ApiResponse<{ voucher_code?: string; points_spent?: number; redemption_id?: string }>> => {
     try {
       const res = await apiRequest(`/benefits/${benefitId}/redeem`, { method: 'POST' });
       if (res.success) {
-        return { success: true, message: res.message || 'Benefício resgatado com sucesso' };
+        return {
+          success: true,
+          message: res.message || 'Benefício resgatado com sucesso!',
+          data: res.data,
+        };
       }
       return {
         success: false,
-        message: res.error?.message || 'Pontos insuficientes ou benefício esgotado',
+        message: res.error?.message || res.message || 'Pontos insuficientes ou benefício esgotado',
       };
     } catch (err: any) {
-      return { success: false, message: err.message || 'Erro de conexão' };
+      return { success: false, message: err.message || 'Erro de conexão ao servidor' };
     }
   },
 

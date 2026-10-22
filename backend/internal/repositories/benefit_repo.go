@@ -50,7 +50,7 @@ func (r *BenefitRepository) GetByID(id string) (*models.Benefit, error) {
 			is_active, category, partner_name, valid_until, created_by,
 			created_at, updated_at
 		FROM benefits
-		WHERE id = $1
+		WHERE id::text = $1
 	`
 	if err := r.db.Get(&b, query, id); err != nil {
 		if err == sql.ErrNoRows {
@@ -90,7 +90,7 @@ func (r *BenefitRepository) DecrementStock(tx *sqlx.Tx, benefitID string) error 
 	query := `
 		UPDATE benefits
 		SET stock = stock - 1, updated_at = NOW()
-		WHERE id = $1 AND stock IS NOT NULL AND stock > 0
+		WHERE id::text = $1 AND stock IS NOT NULL AND stock > 0
 	`
 	res, err := tx.Exec(query, benefitID)
 	if err != nil {

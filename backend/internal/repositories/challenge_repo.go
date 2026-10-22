@@ -36,7 +36,7 @@ func (r *ChallengeRepository) ListActive() ([]models.Challenge, error) {
 	return challenges, nil
 }
 
-// GetByID retrieves a single challenge by ID.
+// GetByID retrieves a single challenge by ID or slug.
 func (r *ChallengeRepository) GetByID(id string) (*models.Challenge, error) {
 	var c models.Challenge
 	query := `
@@ -45,7 +45,7 @@ func (r *ChallengeRepository) GetByID(id string) (*models.Challenge, error) {
 			target_value, target_unit, points_reward, is_active, is_fixed,
 			season_id, created_by, created_at, updated_at
 		FROM challenges
-		WHERE id = $1
+		WHERE id::text = $1 OR slug = $1
 	`
 	if err := r.db.Get(&c, query, id); err != nil {
 		if err == sql.ErrNoRows {
@@ -64,7 +64,7 @@ func (r *ChallengeRepository) GetUserProgress(userID, challengeID string) (*mode
 			id, user_id, challenge_id, status, current_value,
 			completed_at, points_awarded, created_at, updated_at
 		FROM user_challenge_progress
-		WHERE user_id = $1 AND challenge_id = $2
+		WHERE user_id = $1 AND (challenge_id::text = $2 OR challenge_id IN (SELECT id FROM challenges WHERE slug = $2))
 	`
 	if err := r.db.Get(&p, query, userID, challengeID); err != nil {
 		if err == sql.ErrNoRows {
@@ -79,7 +79,7 @@ func (r *ChallengeRepository) GetUserProgress(userID, challengeID string) (*mode
 func (r *ChallengeRepository) CreateProgress(userID, challengeID string) error {
 	query := `
 		INSERT INTO user_challenge_progress (user_id, challenge_id, status)
-		VALUES ($1, $2, 'in_progress')
+		VALUES ($1, COALESCE((SELECT id FROM challenges WHERE id::text = $2 OR slug = $2), $2::uuid), 'in_progress')
 		ON CONFLICT (user_id, challenge_id) DO NOTHING
 	`
 	if _, err := r.db.Exec(query, userID, challengeID); err != nil {
@@ -93,7 +93,7 @@ func (r *ChallengeRepository) UpdateProgress(userID, challengeID string, value f
 	query := `
 		UPDATE user_challenge_progress
 		SET current_value = $1, updated_at = NOW()
-		WHERE user_id = $2 AND challenge_id = $3 AND status = 'in_progress'
+		WHERE user_id = $2 AND (challenge_id::text = $3 OR challenge_id IN (SELECT id FROM challenges WHERE slug = $3)) AND status = 'in_progress'
 	`
 	res, err := r.db.Exec(query, value, userID, challengeID)
 	if err != nil {
@@ -114,7 +114,7 @@ func (r *ChallengeRepository) UpdateStatus(userID, challengeID string, points in
 	query := `
 		UPDATE user_challenge_progress
 		SET status = 'completed', completed_at = NOW(), points_awarded = $1, updated_at = NOW()
-		WHERE user_id = $2 AND challenge_id = $3 AND status = 'in_progress'
+		WHERE user_id = $2 AND (challenge_id::text = $3 OR challenge_id IN (SELECT id FROM challenges WHERE slug = $3)) AND status = 'in_progress'
 	`
 	res, err := r.db.Exec(query, points, userID, challengeID)
 	if err != nil {
