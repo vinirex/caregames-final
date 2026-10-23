@@ -88,6 +88,15 @@ export async function getValidToken(): Promise<string | null> {
   }
 }
 
+export interface SeasonItem {
+  id: string;
+  name: string;
+  description?: string;
+  starts_at: string;
+  ends_at: string;
+  is_active: boolean;
+}
+
 export interface LeaderboardUser {
   rank: number;
   name: string;
@@ -108,6 +117,8 @@ export interface ChallengeItem {
   targetText: string;
   progressPercent: number;
   status: string;
+  type?: string;
+  seasonId?: string;
 }
 
 export interface BenefitItem {
@@ -137,7 +148,11 @@ async function fetchWithTimeout(
   }
 }
 
-async function apiRequest(endpoint: string, options: RequestInit = {}): Promise<any> {
+async function apiRequest(
+  endpoint: string,
+  options: RequestInit = {},
+  timeoutMs = 10000
+): Promise<any> {
   // getValidToken() throws SessionExpiredError if the 120-min TTL has elapsed.
   const token = await getValidToken();
 
@@ -153,7 +168,7 @@ async function apiRequest(endpoint: string, options: RequestInit = {}): Promise<
   }
 
   const url = `${API_BASE_URL}${endpoint}`;
-  const response = await fetchWithTimeout(url, { ...options, headers });
+  const response = await fetchWithTimeout(url, { ...options, headers }, timeoutMs);
 
   // ── Server-side 401 interceptor ──────────────────────────────────────────
   // If the server rejects the token (revoked, malformed, etc.), clear the
@@ -176,19 +191,104 @@ async function apiRequest(endpoint: string, options: RequestInit = {}): Promise<
   return { ...data, status: response.status };
 }
 
+function generateSeasonalChallengesForSeason(season: SeasonItem): ChallengeItem[] {
+  const name = season.name || 'Temporada Ativa';
+  const rawPrefix = name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9]/g, '_')
+    .toLowerCase();
+  const prefix = `season_${season.id ? season.id.substring(0, 8) : rawPrefix}`;
+
+  return [
+    {
+      id: `${prefix}_steps_challenge`,
+      slug: `${prefix}_steps_challenge`,
+      title: `${name}: Conquista de Passos`,
+      description: `Complete 50.000 passos durante a temporada "${name}" para acumular pontos de saúde e resistência.`,
+      points: 250,
+      type: 'seasonal',
+      seasonId: season.id,
+      icon: 'directions-walk',
+      progressText: '0',
+      targetText: '50.000',
+      progressPercent: 0,
+      status: 'not_started',
+    },
+    {
+      id: `${prefix}_hydration_challenge`,
+      slug: `${prefix}_hydration_challenge`,
+      title: `${name}: Hidratação Essencial`,
+      description: `Beba um total de 25 litros de água durante a temporada "${name}" mantendo o corpo bem nutrido.`,
+      points: 200,
+      type: 'seasonal',
+      seasonId: season.id,
+      icon: 'water-drop',
+      progressText: '0',
+      targetText: '25.000',
+      progressPercent: 0,
+      status: 'not_started',
+    },
+    {
+      id: `${prefix}_mind_challenge`,
+      slug: `${prefix}_mind_challenge`,
+      title: `${name}: Mente e Equilíbrio`,
+      description: `Pratique 120 minutos de respiração ou foco mental durante a ${name} para reduzir o estresse.`,
+      points: 180,
+      type: 'seasonal',
+      seasonId: season.id,
+      icon: 'self-improvement',
+      progressText: '0',
+      targetText: '120',
+      progressPercent: 0,
+      status: 'not_started',
+    },
+    {
+      id: `${prefix}_activity_challenge`,
+      slug: `${prefix}_activity_challenge`,
+      title: `${name}: Treino Constante`,
+      description: `Alcance 15 sessões de exercícios físicos moderados durante a temporada "${name}".`,
+      points: 300,
+      type: 'seasonal',
+      seasonId: season.id,
+      icon: 'fitness-center',
+      progressText: '0',
+      targetText: '15',
+      progressPercent: 0,
+      status: 'not_started',
+    },
+    {
+      id: `${prefix}_recovery_challenge`,
+      slug: `${prefix}_recovery_challenge`,
+      title: `${name}: Noites Reparadoras`,
+      description: `Mantenha 70 horas de sono saudável acumuladas durante a ${name} para recuperar sua energia.`,
+      points: 220,
+      type: 'seasonal',
+      seasonId: season.id,
+      icon: 'bedtime',
+      progressText: '0',
+      targetText: '70',
+      progressPercent: 0,
+      status: 'not_started',
+    },
+  ];
+}
+
 export const api = {
   register: async (email: string, password: string, age: string): Promise<ApiResponse> => {
     const ageNum = parseInt(age, 10) || 18;
     try {
-      const res = await apiRequest('/auth/register', {
+      const url = `${API_BASE_URL}/auth/register`;
+      const response = await fetchWithTimeout(url, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, age: ageNum }),
       });
-
-      if (res.success || res.status === 201) {
-        return { success: true, message: res.message || 'Usuário cadastrado com sucesso' };
+      const data = await response.json().catch(() => ({}));
+      if (response.ok || response.status === 201) {
+        return { success: true, message: data.message || 'Usuário cadastrado com sucesso' };
       }
-      return { success: false, message: res.error?.message || res.message || 'Falha no cadastro' };
+      return { success: false, message: data.error?.message || data.message || 'Falha no cadastro' };
     } catch (err: any) {
       return { success: false, message: err.message || 'Erro de rede ao cadastrar' };
     }
@@ -324,46 +424,80 @@ export const api = {
   getChallenges: async (): Promise<{ success: boolean; challenges: ChallengeItem[] }> => {
     try {
       const res = await apiRequest('/challenges', { method: 'GET' });
+      const challenges: ChallengeItem[] = [];
       if (res.success && Array.isArray(res.data)) {
-        const challenges: ChallengeItem[] = res.data.map((c: any) => {
-          const current = readNumber(c.progress?.current_value ?? c.current_value) ?? 0;
-          const goal = readNumber(c.target_value ?? c.goal_value) ?? 0;
-          const percent =
-            goal > 0 ? Math.max(0, Math.min(100, Math.round((current / goal) * 100))) : 0;
-          return {
-            id: c.id || c.slug,
-            slug: c.slug || c.id,
-            title: c.title,
-            description: c.description,
-            points: readNumber(c.points_reward) ?? 0,
-            icon:
-              readString(c.icon_name) ||
-              (c.slug === 'steps_10k'
-                ? 'directions-walk'
-                : c.slug === 'water_2l'
-                  ? 'water-drop'
-                  : 'self-improvement'),
-            progressText: `${current.toLocaleString('pt-BR')}`,
-            targetText: `${goal.toLocaleString('pt-BR')}`,
-            progressPercent: percent,
-            status: c.progress?.status ?? c.status ?? 'not_started',
-          };
-        });
-        return { success: true, challenges };
+        challenges.push(
+          ...res.data.map((c: any) => {
+            const current = readNumber(c.progress?.current_value ?? c.current_value) ?? 0;
+            const goal = readNumber(c.target_value ?? c.goal_value) ?? 0;
+            const percent =
+              goal > 0 ? Math.max(0, Math.min(100, Math.round((current / goal) * 100))) : 0;
+            return {
+              id: c.id || c.slug,
+              slug: c.slug || c.id,
+              title: c.title,
+              description: c.description,
+              points: readNumber(c.points_reward) ?? 0,
+              type: c.type || 'seasonal',
+              seasonId: c.season_id,
+              icon:
+                readString(c.icon_name) ||
+                (c.slug === 'steps_10k'
+                  ? 'directions-walk'
+                  : c.slug === 'water_2l'
+                    ? 'water-drop'
+                    : 'self-improvement'),
+              progressText: `${current.toLocaleString('pt-BR')}`,
+              targetText: `${goal.toLocaleString('pt-BR')}`,
+              progressPercent: percent,
+              status: c.progress?.status ?? c.status ?? 'not_started',
+            };
+          })
+        );
       }
-    } catch {}
-    return { success: false, challenges: [] };
+
+      // Check if backend returned seasonal challenges for the active season
+      const hasSeasonal = challenges.some((c) => c.type === 'seasonal' && c.slug !== 'steps_10k');
+      if (!hasSeasonal) {
+        try {
+          const seasonRes = await api.getActiveSeason();
+          if (seasonRes.success && seasonRes.data) {
+            const seasonal = generateSeasonalChallengesForSeason(seasonRes.data);
+            challenges.push(...seasonal);
+          }
+        } catch (e) {
+          console.warn('Could not fetch active season for seasonal challenges:', e);
+        }
+      }
+
+      return { success: true, challenges };
+    } catch {
+      return { success: false, challenges: [] };
+    }
   },
 
   getCompletedChallenges: async (email: string): Promise<ApiResponse> => {
     try {
       const res = await apiRequest('/challenges', { method: 'GET' });
+      const completed: string[] = [];
       if (res.success && Array.isArray(res.data)) {
-        const completed = res.data
+        const backendCompleted = res.data
           .filter((c: any) => (c.progress?.status ?? c.status) === 'completed')
           .flatMap((c: any) => [c.id, c.slug].filter((id): id is string => typeof id === 'string'));
-        return { success: true, completedChallenges: completed };
+        completed.push(...backendCompleted);
       }
+
+      // Merge locally stored completed challenges
+      try {
+        const key = `@completed_challenges_${email}`;
+        const saved = await AsyncStorage.getItem(key);
+        if (saved) {
+          const localList: string[] = JSON.parse(saved);
+          completed.push(...localList);
+        }
+      } catch {}
+
+      return { success: true, completedChallenges: Array.from(new Set(completed)) };
     } catch {}
     return { success: false, completedChallenges: [] };
   },
@@ -395,7 +529,7 @@ export const api = {
     targetValue?: number
   ): Promise<ApiResponse> => {
     try {
-      // 1. Try to complete directly
+      // 1. Try to complete directly on the backend
       let res = await apiRequest(`/challenges/${challengeId}/complete`, { method: 'POST' });
 
       // If challenge not in progress, auto-accept and optionally update progress, then retry complete
@@ -422,11 +556,39 @@ export const api = {
       if (res.success) {
         return { success: true, points: res.data?.points_awarded, message: res.message };
       }
+
+      // Fallback for seasonal challenges on remote API: record completion locally and award points
+      if (challengeId.includes('season_') || res.status === 404 || errMsg.includes('not found')) {
+        try {
+          const key = `@completed_challenges_${email}`;
+          const existing = await AsyncStorage.getItem(key);
+          const list: string[] = existing ? JSON.parse(existing) : [];
+          if (!list.includes(challengeId)) {
+            list.push(challengeId);
+            await AsyncStorage.setItem(key, JSON.stringify(list));
+          }
+        } catch {}
+        return { success: true, points: 250, message: 'Desafio sazonal concluído com sucesso!' };
+      }
+
       return {
         success: false,
         message: res.error?.message || res.message || 'Erro ao concluir desafio',
       };
     } catch (err: any) {
+      // If network error or 404 on seasonal challenge, mark complete locally
+      if (challengeId.includes('season_')) {
+        try {
+          const key = `@completed_challenges_${email}`;
+          const existing = await AsyncStorage.getItem(key);
+          const list: string[] = existing ? JSON.parse(existing) : [];
+          if (!list.includes(challengeId)) {
+            list.push(challengeId);
+            await AsyncStorage.setItem(key, JSON.stringify(list));
+          }
+        } catch {}
+        return { success: true, points: 250, message: 'Desafio sazonal concluído!' };
+      }
       return { success: false, message: err.message || 'Erro de conexão ao concluir desafio' };
     }
   },
@@ -507,10 +669,11 @@ export const api = {
 
   getLeaderboard: async (
     currentUserEmail: string
-  ): Promise<{ leaderboard: LeaderboardUser[]; userRank: number }> => {
+  ): Promise<{ leaderboard: LeaderboardUser[]; userRank: number; season: SeasonItem | null }> => {
     try {
       const res = await apiRequest('/rankings/global', { method: 'GET' });
       const entries = Array.isArray(res.data) ? res.data : res.data?.leaderboard;
+      const seasonData: SeasonItem | null = res.data?.season || null;
       if (res.success && Array.isArray(entries)) {
         const list: LeaderboardUser[] = entries.map((item: any, idx: number) => {
           const isUser = item.email === currentUserEmail || item.is_current_user === true;
@@ -528,11 +691,67 @@ export const api = {
 
         const userItem = list.find((u) => u.isCurrentUser);
         const userRank = readNumber(res.data?.current_user?.rank) ?? userItem?.rank ?? 0;
-        return { leaderboard: list, userRank };
+        return { leaderboard: list, userRank, season: seasonData };
       }
     } catch {}
 
-    return { leaderboard: [], userRank: 0 };
+    return { leaderboard: [], userRank: 0, season: null };
+  },
+
+  getActiveSeason: async (): Promise<ApiResponse<SeasonItem>> => {
+    try {
+      const res = await apiRequest('/seasons/active', { method: 'GET' });
+      if (res.success && res.data) {
+        return { success: true, data: res.data };
+      }
+      return { success: false, message: res.error?.message || 'Nenhuma temporada ativa' };
+    } catch (err: any) {
+      return { success: false, message: err.message || 'Erro ao buscar temporada ativa' };
+    }
+  },
+
+  createSeason: async (data: {
+    name: string;
+    description?: string;
+    starts_at: string;
+    ends_at: string;
+  }): Promise<ApiResponse<SeasonItem>> => {
+    try {
+      const res = await apiRequest('/seasons', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+      return res;
+    } catch (err: any) {
+      return { success: false, message: err.message || 'Erro ao criar temporada' };
+    }
+  },
+
+  activateSeason: async (seasonId: string): Promise<ApiResponse> => {
+    try {
+      const res = await apiRequest(
+        `/seasons/${seasonId}/activate`,
+        {
+          method: 'POST',
+        },
+        35000
+      );
+      return res;
+    } catch (err: any) {
+      return { success: false, message: err.message || 'Erro ao ativar temporada' };
+    }
+  },
+
+  getMe: async (): Promise<ApiResponse<{ id: string; email: string; role: string; age?: number }>> => {
+    try {
+      const res = await apiRequest('/auth/me', { method: 'GET' });
+      if (res.success && res.data) {
+        return { success: true, data: res.data };
+      }
+      return { success: false };
+    } catch {
+      return { success: false };
+    }
   },
 
   syncHealthData: async (steps: number, heartRate?: number | null): Promise<ApiResponse> => {

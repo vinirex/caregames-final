@@ -5,7 +5,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
-import { router, useFocusEffect } from 'expo-router';
+import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api } from '../services/api';
@@ -37,40 +37,38 @@ export function TopAppBar({ title = "Care Games +", onMenuPress }: TopAppBarProp
   const activeEmail = userEmail || 'test@test.com';
   const [userName, setUserName] = useState<string>(activeEmail.split('@')[0]);
 
-  useFocusEffect(
-    useCallback(() => {
-      let isMounted = true;
-      const loadUserData = async () => {
-        try {
-          const photoKey = `@profile_photo_${activeEmail}`;
-          const savedPhoto = await AsyncStorage.getItem(photoKey);
-          if (isMounted && savedPhoto) setUserPhoto(savedPhoto);
+  useEffect(() => {
+    let isMounted = true;
+    const loadUserData = async () => {
+      try {
+        const photoKey = `@profile_photo_${activeEmail}`;
+        const savedPhoto = await AsyncStorage.getItem(photoKey);
+        if (isMounted && savedPhoto) setUserPhoto(savedPhoto);
 
-          const photoRes = await api.getProfilePhoto(activeEmail);
-          if (isMounted && photoRes.success && photoRes.photoUri) {
-            setUserPhoto(photoRes.photoUri);
-          }
-
-          const profileRes = await api.getProfile(activeEmail);
-          if (isMounted) {
-            if (profileRes.success && profileRes.profile?.name) {
-              setUserName(profileRes.profile.name);
-            } else if (activeEmail) {
-              setUserName(activeEmail.split('@')[0]);
-            }
-          }
-        } catch (e) {
-          console.error('Error loading top bar profile data:', e);
+        const photoRes = await api.getProfilePhoto(activeEmail);
+        if (isMounted && photoRes.success && photoRes.photoUri) {
+          setUserPhoto(photoRes.photoUri);
         }
-      };
 
-      loadUserData();
+        const profileRes = await api.getProfile(activeEmail);
+        if (isMounted) {
+          if (profileRes.success && profileRes.profile?.name) {
+            setUserName(profileRes.profile.name);
+          } else if (activeEmail) {
+            setUserName(activeEmail.split('@')[0]);
+          }
+        }
+      } catch (e) {
+        console.error('Error loading top bar profile data:', e);
+      }
+    };
 
-      return () => {
-        isMounted = false;
-      };
-    }, [activeEmail, menuVisible, userEmail])
-  );
+    loadUserData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [activeEmail, menuVisible, userEmail]);
 
   const handleChangePhoto = async () => {
     try {

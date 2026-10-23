@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, Image, TouchableOpacity } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../context/ThemeContext';
@@ -8,9 +8,7 @@ import { TopAppBar } from '../components/TopAppBar';
 import { BottomNav } from '../components/BottomNav';
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { api, LeaderboardUser } from '../services/api';
-import { useFocusEffect } from 'expo-router';
-
+import { api, LeaderboardUser, SeasonItem } from '../services/api';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const DEFAULT_AVATAR = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150";
@@ -25,37 +23,80 @@ export default function RankingsScreen() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>([]);
   const [userRank, setUserRank] = useState<number>(4);
   const [userPhoto, setUserPhoto] = useState<string | null>(null);
+  const [season, setSeason] = useState<SeasonItem | null>(null);
+  const [countdown, setCountdown] = useState<string>('--');
 
-  useFocusEffect(
-    useCallback(() => {
-      let isMounted = true;
-      const fetchRankings = async () => {
-        const { leaderboard: list, userRank: rank } = await api.getLeaderboard(activeEmail);
+  useEffect(() => {
+    let isMounted = true;
+    const fetchRankings = async () => {
+      try {
+        const { leaderboard: list, userRank: rank, season: activeSeason } = await api.getLeaderboard(activeEmail);
         if (isMounted) {
           setLeaderboard(list);
           setUserRank(rank);
-        }
-
-        try {
-          const photoKey = `@profile_photo_${activeEmail}`;
-          const savedPhoto = await AsyncStorage.getItem(photoKey);
-          if (isMounted && savedPhoto) setUserPhoto(savedPhoto);
-
-          const photoRes = await api.getProfilePhoto(activeEmail);
-          if (isMounted && photoRes.success && photoRes.photoUri) {
-            setUserPhoto(photoRes.photoUri);
+          if (activeSeason) {
+            setSeason(activeSeason);
+          } else {
+            const seasonRes = await api.getActiveSeason();
+            if (isMounted && seasonRes.success && seasonRes.data) {
+              setSeason(seasonRes.data);
+            }
           }
-        } catch (e) {
-          console.error('Error loading ranking user photo:', e);
         }
-      };
-      fetchRankings();
 
-      return () => {
-        isMounted = false;
-      };
-    }, [activeEmail, points])
-  );
+        const photoKey = `@profile_photo_${activeEmail}`;
+        const savedPhoto = await AsyncStorage.getItem(photoKey);
+        if (isMounted && savedPhoto) setUserPhoto(savedPhoto);
+
+        const photoRes = await api.getProfilePhoto(activeEmail);
+        if (isMounted && photoRes.success && photoRes.photoUri) {
+          setUserPhoto(photoRes.photoUri);
+        }
+      } catch (e) {
+        console.error('Error loading ranking user photo or data:', e);
+      }
+    };
+
+    fetchRankings();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [activeEmail, points]);
+
+  // Dynamic countdown timer based on API season ends_at
+  useEffect(() => {
+    if (!season?.ends_at) {
+      setCountdown('--');
+      return;
+    }
+
+    const updateCountdown = () => {
+      const end = new Date(season.ends_at).getTime();
+      const now = Date.now();
+      const diff = end - now;
+
+      if (diff <= 0) {
+        setCountdown('Encerrada');
+        return;
+      }
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+      if (days > 0) {
+        setCountdown(`${days}d ${hours}h`);
+      } else {
+        setCountdown(`${hours}h ${minutes}m`);
+      }
+    };
+
+    updateCountdown();
+    const timer = setInterval(updateCountdown, 30000); // refresh every 30 seconds
+
+    return () => clearInterval(timer);
+  }, [season?.ends_at]);
 
   return (
     <View className={`flex-1 ${theme === 'dark' ? 'bg-background' : 'bg-slate-100'}`}>
@@ -70,18 +111,18 @@ export default function RankingsScreen() {
             Classificação Global
           </Text>
           <Text className={`font-hanken text-base ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'} mb-4`}>
-            Os melhores colocados da temporada Cyber-Athletic.
+            {season ? `Melhores colocados da ${season.name}.` : 'Os melhores colocados da temporada atual.'}
           </Text>
           
-          <View className="flex-row items-center gap-2 self-start">
+          <View className="flex-row items-center gap-2 self-start flex-wrap">
             <Text className={`font-jetbrains text-xs uppercase font-semibold ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
-              TEMPORADA 4 TERMINA EM:
+              {season ? `${season.name.toUpperCase()} TERMINA EM:` : 'TEMPORADA ATIVA TERMINA EM:'}
             </Text>
             <View className={`px-3 py-1 rounded-lg border ${
               theme === 'dark' ? 'bg-amber-500/10 border-amber-500/30' : 'bg-amber-100 border-amber-300'
             }`}>
               <Text className={`font-sora font-bold text-sm ${theme === 'dark' ? 'text-amber-400' : 'text-amber-800'}`}>
-                12d 14h
+                {countdown}
               </Text>
             </View>
           </View>

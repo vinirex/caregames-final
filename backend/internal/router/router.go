@@ -1,22 +1,31 @@
 package router
 
 import (
+	"time"
+
+	"github.com/caregames/api/internal/config"
 	"github.com/caregames/api/internal/handlers"
 	"github.com/caregames/api/internal/middleware"
 	"github.com/caregames/api/internal/repositories"
 	"github.com/caregames/api/internal/services"
-	"time"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
 
+	_ "github.com/caregames/api/docs"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
-	_ "github.com/caregames/api/docs"
 )
 
 // Setup builds and returns the configured Gin engine.
-func Setup(db *sqlx.DB) *gin.Engine {
+func Setup(db *sqlx.DB, cfgs ...*config.Config) *gin.Engine {
+	var cfg *config.Config
+	if len(cfgs) > 0 && cfgs[0] != nil {
+		cfg = cfgs[0]
+	} else {
+		cfg, _ = config.Load()
+	}
+
 	r := gin.New()
 	r.Use(gin.Recovery())
 	r.Use(middleware.Logger())
@@ -41,6 +50,14 @@ func Setup(db *sqlx.DB) *gin.Engine {
 	seasonRepo    := repositories.NewSeasonRepository(db)
 
 	// ── Services ────────────────────────────────────────────────
+	aiKey := ""
+	aiModel := "gemini-1.5-flash"
+	if cfg != nil {
+		aiKey = cfg.AIAPIKey
+		aiModel = cfg.AIModel
+	}
+	aiSvc := services.NewAIService(aiKey, aiModel)
+
 	authSvc      := services.NewAuthService(userRepo)
 	profileSvc   := services.NewProfileService(userRepo)
 	pointsSvc    := services.NewPointsService(pointsRepo, userRepo)
@@ -50,7 +67,7 @@ func Setup(db *sqlx.DB) *gin.Engine {
 	notifSvc     := services.NewNotificationService(notifRepo)
 	groupSvc     := services.NewGroupService(groupRepo)
 	rankingSvc   := services.NewRankingService(rankingRepo)
-	seasonSvc    := services.NewSeasonService(seasonRepo)
+	seasonSvc    := services.NewSeasonService(seasonRepo, challengeRepo, aiSvc)
 
 	// ── Handlers ────────────────────────────────────────────────
 	authH      := handlers.NewAuthHandler(authSvc)
@@ -179,6 +196,7 @@ func Setup(db *sqlx.DB) *gin.Engine {
 		seasons.PUT("/:id", seasonH.UpdateSeason)
 		seasons.DELETE("/:id", seasonH.DeleteSeason)
 		seasons.POST("/:id/activate", seasonH.ActivateSeason)
+		seasons.POST("/:id/generate-challenges", seasonH.GenerateSeasonChallenges)
 	}
 
 	return r

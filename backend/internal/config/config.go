@@ -30,6 +30,10 @@ type Config struct {
 	AllowedOrigins string
 	// Seed
 	RunSeed bool
+
+	// AI
+	AIAPIKey string
+	AIModel  string
 }
 
 // Load reads configuration from a .env file (if present) and environment variables.
@@ -48,6 +52,8 @@ func Load() (*Config, error) {
 		DBSSLMode:      getEnv("DB_SSL_MODE", "disable"),
 		APIKeyPrefix:   getEnv("API_KEY_PREFIX", "cgk_"),
 		AllowedOrigins: getEnv("ALLOWED_ORIGINS", "*"),
+		AIAPIKey:       getEnv("AI_API_KEY", getEnv("GEMINI_API_KEY", "YOUR_GEMINI_API_KEY_HERE")),
+		AIModel:        getEnv("AI_MODEL", "gemini-1.5-flash"),
 	}
 
 	cost, err := strconv.Atoi(getEnv("BCRYPT_COST", "12"))

@@ -160,7 +160,7 @@ func (h *SeasonHandler) DeleteSeason(c *gin.Context) {
 }
 
 // ActivateSeason godoc
-// @Summary      Activate a season
+// @Summary      Activate a season and generate 5 seasonal challenges via AI
 // @Tags         seasons
 // @Security     ApiKeyAuth
 // @Produce      json
@@ -173,5 +173,28 @@ func (h *SeasonHandler) ActivateSeason(c *gin.Context) {
 		response.InternalError(c, "Erro ao ativar temporada")
 		return
 	}
-	response.OK(c, nil, "Temporada ativada com sucesso")
+	response.OK(c, nil, "Temporada ativada e 5 desafios sazonais configurados com sucesso")
 }
+
+// GenerateSeasonChallenges godoc
+// @Summary      Generate 5 seasonal challenges using AI
+// @Tags         seasons
+// @Security     ApiKeyAuth
+// @Produce      json
+// @Param        id path string true "Season ID"
+// @Success      200  {object} response.APIResponse
+// @Router       /seasons/{id}/generate-challenges [post]
+func (h *SeasonHandler) GenerateSeasonChallenges(c *gin.Context) {
+	id := c.Param("id")
+	challenges, err := h.svc.GenerateSeasonChallenges(id)
+	if err != nil {
+		if strings.HasPrefix(err.Error(), "not_found") {
+			response.NotFound(c, "Temporada não encontrada")
+			return
+		}
+		response.InternalError(c, "Erro ao gerar desafios com IA")
+		return
+	}
+	response.OK(c, challenges, "5 desafios sazonais gerados com sucesso")
+}
+

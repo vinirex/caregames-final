@@ -60,6 +60,11 @@
     "tailwindcss": "^3.4.18",
     "typescript": "~6.0.3"
   },
+  "overrides": {
+    "braces": "^3.0.3",
+    "micromatch": "^4.0.8",
+    "postcss-selector-parser": "^7.1.6"
+  },
   "main": "expo-router/entry",
   "private": true,
   "engines": {

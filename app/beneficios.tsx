@@ -39,7 +39,7 @@ export default function BenefitsScreen() {
   // In-App Toast state & animation
   const [toast, setToast] = useState<InAppToast | null>(null);
   const toastAnim = useRef(new Animated.Value(0)).current;
-  const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showNotification = useCallback(
     (
@@ -135,7 +135,7 @@ export default function BenefitsScreen() {
         const voucher = res.data?.voucher_code;
         const successMessage = voucher
           ? `Voucher "${voucher}" gerado! Você resgatou "${benefit.title}" por ${benefit.points} PTS.`
-          : `Você resgatou "${benefit.title}" por ${benefit.points} PTS com sucesso!`;
+          : `Você resgatou "${benefit.title}" por ${benefit.points} PTS!`;
 
         showNotification(
           'Benefício Resgatado! 🎁',

@@ -14,7 +14,7 @@ import { TopAppBar } from '../components/TopAppBar';
 import { BottomNav } from '../components/BottomNav';
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { api, ChallengeItem } from '../services/api';
+import { api, ChallengeItem, SeasonItem } from '../services/api';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNotifications } from '../context/NotificationContext';
 import { useHealthData } from '../hooks/useHealthData';
@@ -44,6 +44,7 @@ export default function DesafiosScreen() {
 
   const [stepsChallenge, setStepsChallenge] = useState<ChallengeItem | null>(null);
   const [challengesList, setChallengesList] = useState<ChallengeItem[]>([]);
+  const [activeSeason, setActiveSeason] = useState<SeasonItem | null>(null);
   const [completedIds, setCompletedIds] = useState<string[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [completingId, setCompletingId] = useState<string | null>(null);
@@ -51,7 +52,7 @@ export default function DesafiosScreen() {
   // In-App Toast state & animation
   const [toast, setToast] = useState<InAppToast | null>(null);
   const toastAnim = useRef(new Animated.Value(0)).current;
-  const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showNotification = useCallback(
     (
@@ -114,7 +115,15 @@ export default function DesafiosScreen() {
 
   const fetchChallengesData = useCallback(async () => {
     setLoading(true);
-    const challengesRes = await api.getChallenges();
+    const [challengesRes, seasonRes] = await Promise.all([
+      api.getChallenges(),
+      api.getActiveSeason(),
+    ]);
+
+    if (seasonRes.success && seasonRes.data) {
+      setActiveSeason(seasonRes.data);
+    }
+
     if (challengesRes.success && challengesRes.challenges) {
       // Find the base daily steps challenge
       const foundSteps = challengesRes.challenges.find(
@@ -617,10 +626,10 @@ export default function DesafiosScreen() {
         <View className="mt-2">
           <Text
             className={`font-jetbrains text-xs uppercase font-bold tracking-wider mb-3 ${
-              theme === 'dark' ? 'text-slate-400' : 'text-slate-600'
+              theme === 'dark' ? 'text-cyan-400' : 'text-cyan-700'
             }`}
           >
-            OUTROS DESAFIOS DO BACKEND
+            {activeSeason ? `DESAFIOS SAZONAIS: ${activeSeason.name.toUpperCase()}` : 'OUTROS DESAFIOS DA TEMPORADA'}
           </Text>
 
           {loading ? (

@@ -51,7 +51,7 @@ func main() {
 		}
 	}
 
-	r := router.Setup(db)
+	r := router.Setup(db, cfg)
 
 	addr := fmt.Sprintf(":%s", cfg.Port)
 	log.Printf("🚀 CareGames+ API starting on %s (env=%s)", addr, cfg.Env)

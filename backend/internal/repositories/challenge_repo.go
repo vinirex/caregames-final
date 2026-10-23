@@ -18,7 +18,7 @@ func NewChallengeRepository(db *sqlx.DB) *ChallengeRepository {
 	return &ChallengeRepository{db: db}
 }
 
-// ListActive returns all currently active challenges.
+// ListActive returns all currently active challenges for the current season.
 func (r *ChallengeRepository) ListActive() ([]models.Challenge, error) {
 	var challenges []models.Challenge
 	query := `
@@ -28,6 +28,11 @@ func (r *ChallengeRepository) ListActive() ([]models.Challenge, error) {
 			season_id, created_by, created_at, updated_at
 		FROM challenges
 		WHERE is_active = true
+		  AND (
+			type != 'seasonal' 
+			OR season_id IS NULL 
+			OR season_id IN (SELECT id FROM seasons WHERE is_active = true)
+		  )
 		ORDER BY type ASC, points_reward ASC
 	`
 	if err := r.db.Select(&challenges, query); err != nil {
@@ -129,3 +134,94 @@ func (r *ChallengeRepository) UpdateStatus(userID, challengeID string, points in
 	}
 	return nil
 }
+
+// Create inserts a new challenge into the database.
+func (r *ChallengeRepository) Create(c *models.Challenge) error {
+	query := `
+		INSERT INTO challenges (
+			slug, title, description, icon_name, type, metric,
+			target_value, target_unit, points_reward, is_active, is_fixed,
+			season_id, created_by
+		)
+		VALUES (
+			$1, $2, $3, $4, $5, $6,
+			$7, $8, $9, $10, $11,
+			NULLIF($12, '')::uuid, NULLIF($13, '')::uuid
+		)
+		RETURNING id, created_at, updated_at
+	`
+	var seasonIDStr, createdByStr string
+	if c.SeasonID.Valid {
+		seasonIDStr = c.SeasonID.String
+	}
+	if c.CreatedBy.Valid {
+		createdByStr = c.CreatedBy.String
+	}
+
+	return r.db.QueryRow(
+		query,
+		c.Slug, c.Title, c.Description, c.IconName, c.Type, c.Metric,
+		c.TargetValue, c.TargetUnit, c.PointsReward, c.IsActive, c.IsFixed,
+		seasonIDStr, createdByStr,
+	).Scan(&c.ID, &c.CreatedAt, &c.UpdatedAt)
+}
+
+// ListBySeasonID returns all challenges linked to a season.
+func (r *ChallengeRepository) ListBySeasonID(seasonID string) ([]models.Challenge, error) {
+	var challenges []models.Challenge
+	query := `
+		SELECT
+			id, slug, title, description, icon_name, type, metric,
+			target_value, target_unit, points_reward, is_active, is_fixed,
+			season_id, created_by, created_at, updated_at
+		FROM challenges
+		WHERE season_id::text = $1
+		ORDER BY points_reward ASC
+	`
+	if err := r.db.Select(&challenges, query, seasonID); err != nil {
+		return nil, fmt.Errorf("challenge_repo.ListBySeasonID: %w", err)
+	}
+	return challenges, nil
+}
+
+// ActivateSeasonalChallenges activates all challenges associated with a season.
+func (r *ChallengeRepository) ActivateSeasonalChallenges(seasonID string) error {
+	query := `UPDATE challenges SET is_active = true WHERE season_id::text = $1`
+	_, err := r.db.Exec(query, seasonID)
+	if err != nil {
+		return fmt.Errorf("challenge_repo.ActivateSeasonalChallenges: %w", err)
+	}
+	return nil
+}
+
+// DeactivateOtherSeasonalChallenges deactivates seasonal challenges from other seasons.
+func (r *ChallengeRepository) DeactivateOtherSeasonalChallenges(activeSeasonID string) error {
+	query := `UPDATE challenges SET is_active = false WHERE type = 'seasonal' AND (season_id IS NULL OR season_id::text != $1)`
+	_, err := r.db.Exec(query, activeSeasonID)
+	if err != nil {
+		return fmt.Errorf("challenge_repo.DeactivateOtherSeasonalChallenges: %w", err)
+	}
+	return nil
+}
+
+// ChallengeSummary represents brief metadata of an existing challenge.
+type ChallengeSummary struct {
+	Slug   string `db:"slug"   json:"slug"`
+	Title  string `db:"title"  json:"title"`
+	Metric string `db:"metric" json:"metric"`
+}
+
+// ListSummaries retrieves recent challenges to avoid duplicate generation.
+func (r *ChallengeRepository) ListSummaries(limit int) ([]ChallengeSummary, error) {
+	if limit <= 0 {
+		limit = 10
+	}
+	var summaries []ChallengeSummary
+	query := `SELECT slug, title, metric FROM challenges ORDER BY created_at DESC LIMIT $1`
+	if err := r.db.Select(&summaries, query, limit); err != nil {
+		return nil, fmt.Errorf("challenge_repo.ListSummaries: %w", err)
+	}
+	return summaries, nil
+}
+
+

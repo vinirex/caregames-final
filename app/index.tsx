@@ -1,14 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useRouter } from 'expo-router';
-import { Text, View, TextInput, ActivityIndicator, Image, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { useRouter } from 'expo-router';
+import {
+  Text,
+  View,
+  TextInput,
+  ActivityIndicator,
+  Image,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableOpacity,
+} from 'react-native';
 import '../global.css';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { CustomButton } from '../components/CustomButton';
 import { api } from '../services/api';
-
+import { MaterialIcons } from '@expo/vector-icons';
 import { FormErrors } from '../types';
-
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function LoginScreen() {
@@ -107,10 +116,6 @@ export default function LoginScreen() {
           <Text className="text-lg font-semibold text-center text-cyan-400 mt-1 font-sans">Portal de Saúde e Bem-estar</Text>
         </View>
 
-        <Link href="/register" className="mb-6">
-          <Text className="text-center text-cyan-400 font-sans font-medium">Não tem uma conta? <Text className="underline font-bold">Cadastre-se</Text></Text>
-        </Link>
-
         {errors.api && (
           <Text className="text-red-400 font-bold text-center mb-4 bg-red-500/10 border border-red-500/30 p-3 rounded-xl font-sans">
             {errors.api}
@@ -143,6 +148,17 @@ export default function LoginScreen() {
         <View className="mt-4">
           <CustomButton title="Entrar" onPress={handleLogin} />
         </View>
+
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={() => router.push('/register')}
+          className="mt-4 h-14 rounded-xl border border-cyan-500/40 bg-cyan-500/10 flex-row items-center justify-center gap-2 shadow-sm"
+        >
+          <MaterialIcons name="person-add" size={20} color="#00E5FF" />
+          <Text className="text-cyan-400 font-sans font-bold text-base">
+            Não tem uma conta? Cadastre-se
+          </Text>
+        </TouchableOpacity>
 
         <View className="mt-6 bg-slate-900 p-4 rounded-xl border border-slate-800">
           <Text className="text-slate-400 text-center text-xs mb-2 font-sans">Contas de teste disponíveis:</Text>
